@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Quick Teams — find your missing teammate for hackathons, projects and clubs. Smart matching, real-time search, and clean UI." />
+  <title>Quick Teams — Find Your Missing Piece</title>
+
+  <!-- Tailwind CDN (full) + experimental forms & typography plugins via CDN config -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4f46e5',
+            accent: '#f97316'
+          },
+          fontFamily: {
+            display: ['Dancing Script', 'ui-sans-serif', 'system-ui'],
+            body: ['Inter', 'ui-sans-serif', 'system-ui']
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* small custom helper styles (kept outside Tailwind for some fine-tuning) */
+    :root { --glass: rgba(255,255,255,0.06); --glass-2: rgba(255,255,255,0.08); }
+    .glass { background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); backdrop-filter: blur(6px); }
+    .logo-mark { filter: drop-shadow(0 6px 18px rgba(79,70,229,0.18)); }
+    /* accessibility focus ring */
+    :focus { outline: none; box-shadow: 0 0 0 4px rgba(79,70,229,0.12); border-radius: 6px; }
+    /* subtle floating animation for hero svg */
+    @keyframes floaty { 0% { transform: translateY(0) } 50% { transform: translateY(-8px) } 100% { transform: translateY(0) } }
+    .floaty { animation: floaty 6s ease-in-out infinite; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-slate-100 font-body antialiased">
+  <!-- Page wrapper -->
+  <div class="max-w-7xl mx-auto px-6 py-10">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between gap-6">
+      <a href="#" class="flex items-center gap-3" aria-label="Quick Teams home">
+        <svg class="w-12 h-12 logo-mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <rect x="2" y="2" width="60" height="60" rx="12" fill="url(#g)" />
+          <defs>
+            <linearGradient id="g" x1="0" x2="1">
+              <stop offset="0" stop-color="#7c3aed" />
+              <stop offset="1" stop-color="#06b6d4" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div>
+          <span class="block text-2xl font-extrabold">Quick <span class="text-accent">Teams</span></span>
+          <span class="block text-xs text-slate-300 -mt-1">Find your missing piece</span>
+        </div>
+      </a>
+
+      <nav class="flex items-center gap-4">
+        <button id="darkToggle" aria-pressed="false" class="bg-white/6 px-3 py-2 rounded-md text-sm">Dark</button>
+        <a href="#teams" class="hidden md:inline-block px-4 py-2 border rounded-md border-white/6">Explore Teams</a>
+        <button id="openCreate" class="ml-2 inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md text-white">Create Team</button>
+      </nav>
+    </header>
+
+    <!-- Hero -->
+    <section class="mt-12 grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <h1 class="text-5xl sm:text-6xl font-extrabold leading-tight">Find collaborators fast — <span class="text-accent">join</span> the right team.</h1>
+        <p class="mt-4 text-slate-300 max-w-xl">Smart filters, instant search and privacy-first team creation for hackathons, projects and clubs. Ship prototypes with teammates who complement your skills.</p>
+
+        <div class="mt-8 flex gap-3">
+          <a id="ctaDiscover" href="#teams" class="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-lg">Explore Teams</a>
+          <button id="ctaCreate" class="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/8 text-white border border-white/10">Create a Team</button>
+        </div>
+
+        <ul class="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm text-slate-300 max-w-md">
+          <li class="flex items-center gap-2"><strong class="w-8 inline-block text-accent">125+</strong>Projects</li>
+          <li class="flex items-center gap-2"><strong class="w-8 inline-block text-accent">350+</strong>Members</li>
+          <li class="flex items-center gap-2"><strong class="w-8 inline-block text-accent">24h</strong>Fast matches</li>
+        </ul>
+      </div>
+
+      <div class="relative">
+        <!-- Floating mockup / card -->
+        <div class="bg-gradient-to-br from-white/6 to-white/3 p-6 rounded-2xl glass shadow-2xl floaty">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-white">Hackathon — Web Dev</h3>
+              <p class="text-sm text-slate-200/80">Looking for a Backend dev and UI/UX designer</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-200/70">Open</span>
+              <div class="mt-2 text-sm text-slate-300">3/5 members</div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center gap-3">
+            <div class="flex -space-x-3">
+              <img alt="A" src="https://placehold.co/40x40/7c3aed/fff?text=J" class="w-10 h-10 rounded-full ring-2 ring-white/40" />
+              <img alt="B" src="https://placehold.co/40x40/06b6d4/fff?text=A" class="w-10 h-10 rounded-full ring-2 ring-white/40" />
+            </div>
+            <div class="flex-1">
+              <div class="flex gap-2 flex-wrap">
+                <span class="px-3 py-1 rounded-full bg-white/8 text-xs">React</span>
+                <span class="px-3 py-1 rounded-full bg-white/8 text-xs">Node.js</span>
+                <span class="px-3 py-1 rounded-full bg-white/8 text-xs">UI/UX</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex gap-3">
+            <button class="flex-1 rounded-full px-4 py-2 bg-accent text-white">Apply</button>
+            <button class="rounded-full px-4 py-2 border border-white/10">Preview</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Controls & Search -->
+    <section id="teams" class="mt-16">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex-1">
+          <label for="search" class="sr-only">Search teams</label>
+          <input id="search" type="search" placeholder="Search teams, skills or descriptions" class="w-full rounded-md px-4 py-3 bg-white/6 placeholder:text-slate-300" />
+        </div>
+
+        <div class="flex gap-3 items-center">
+          <select id="filterSkill" class="rounded-md px-3 py-2 bg-white/6">
+            <option value="">All skills</option>
+            <option value="react">React</option>
+            <option value="node">Node.js</option>
+            <option value="python">Python</option>
+            <option value="ml">Machine Learning</option>
+            <option value="unity">Unity</option>
+          </select>
+          <button id="resetFilters" class="px-3 py-2 rounded-md bg-white/6">Reset</button>
+        </div>
+      </div>
+
+      <!-- Team grid -->
+      <div id="teamGrid" class="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"></div>
+    </section>
+
+    <!-- Features & Why it works -->
+    <section class="mt-16 grid md:grid-cols-3 gap-8">
+      <article class="glass p-6 rounded-xl">
+        <h4 class="font-semibold">Smart Matching</h4>
+        <p class="mt-2 text-sm text-slate-300">Filter by skills, availability and project type. Quick matches with minimal setup.</p>
+      </article>
+      <article class="glass p-6 rounded-xl">
+        <h4 class="font-semibold">Privacy & Control</h4>
+        <p class="mt-2 text-sm text-slate-300">You control what you share. Approve join requests and protect your project idea.</p>
+      </article>
+      <article class="glass p-6 rounded-xl">
+        <h4 class="font-semibold">Built for speed</h4>
+        <p class="mt-2 text-sm text-slate-300">Optimized for quick discovery during short hackathons and events.</p>
+      </article>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-20 text-center text-slate-400 text-sm">
+      Made with ❤️ for your collaborations! • <span id="year"></span>
+    </footer>
+
+  </div>
+
+  <!-- Create Team Modal (accessible) -->
+  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="bg-slate-900 max-w-2xl w-full rounded-xl p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 id="modalTitle" class="text-lg font-semibold">Create a team</h3>
+          <p class="text-sm text-slate-400">Share the skills you're looking for and invite collaborators.</p>
+        </div>
+        <button id="closeModal" aria-label="Close" class="text-slate-400">✕</button>
+      </div>
+
+      <form id="createForm" class="mt-4 grid grid-cols-1 gap-3">
+        <label class="sr-only" for="teamName">Team name</label>
+        <input id="teamName" name="teamName" placeholder="Team name (e.g., The Code Breakers)" required class="px-4 py-3 rounded-md bg-white/6" />
+
+        <label class="sr-only" for="desc">Description</label>
+        <textarea id="desc" name="description" rows="3" placeholder="Short description" class="px-4 py-3 rounded-md bg-white/6"></textarea>
+
+        <input id="skills" name="skills" placeholder="Skills (comma separated)" class="px-4 py-3 rounded-md bg-white/6" />
+
+        <div class="flex gap-2">
+          <button type="submit" class="flex-1 px-4 py-2 rounded-md bg-accent text-white">Create</button>
+          <button type="button" id="cancelCreate" class="px-4 py-2 rounded-md border border-white/8">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Tiny client-side app: stores teams in localStorage and powers search/filter
+    const sampleTeams = [
+      { id: 't1', name: 'AI-powered Chatbot', desc: 'Chatbot for event portal.', skills: ['python','ml','web'], members: 3, status: 'open' },
+      { id: 't2', name: 'Mobile Game Dev', desc: 'Fun mobile game using Unity.', skills: ['unity','c#','backend'], members: 2, status: 'looking' },
+      { id: 't3', name: 'Hackathon Web Dev', desc: 'Weekend hackathon team.', skills: ['html','css','js'], members: 5, status: 'full' }
+    ];
+
+    const storageKey = 'qt_teams_v1';
+    function loadTeams() {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) { localStorage.setItem(storageKey, JSON.stringify(sampleTeams)); return sampleTeams.slice(); }
+      try { return JSON.parse(raw); } catch (e) { return sampleTeams.slice(); }
+    }
+    function saveTeams(list) { localStorage.setItem(storageKey, JSON.stringify(list)); }
+
+    // Render helpers
+    const teamGrid = document.getElementById('teamGrid');
+    function renderTeams(list) {
+      teamGrid.innerHTML = '';
+      if (!list.length) { teamGrid.innerHTML = '<div class="text-center text-slate-400 col-span-full">No teams found — create one!</div>'; return; }
+      list.forEach(t => {
+        const card = document.createElement('article');
+        card.className = 'p-4 rounded-xl glass';
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-semibold text-white">${escapeHtml(t.name)}</h3>
+              <p class="mt-1 text-sm text-slate-300">${escapeHtml(t.desc)}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-300">${t.status}</span>
+              <div class="text-sm text-slate-300 mt-2">${t.members}/5</div>
+            </div>
+          </div>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            ${t.skills.map(s => `<span class="px-3 py-1 rounded-full bg-white/8 text-xs">${escapeHtml(s)}</span>`).join('')}
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button data-id="${t.id}" class="applyBtn flex-1 px-3 py-2 rounded-md bg-accent text-white">Apply</button>
+            <button data-id="${t.id}" class="previewBtn px-3 py-2 rounded-md border border-white/8">Preview</button>
+          </div>
+        `;
+        teamGrid.appendChild(card);
+      });
+    }
+
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+    // initialize
+    let teams = loadTeams();
+    renderTeams(teams);
+
+    // Search + filter
+    const searchInput = document.getElementById('search');
+    const filterSkill = document.getElementById('filterSkill');
+    const resetFilters = document.getElementById('resetFilters');
+
+    function applyFilters() {
+      const q = (searchInput.value || '').toLowerCase().trim();
+      const skill = filterSkill.value;
+      let filtered = teams.filter(t => {
+        if (skill && !t.skills.includes(skill)) return false;
+        if (!q) return true;
+        return t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.skills.join(' ').includes(q);
+      });
+      renderTeams(filtered);
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    filterSkill.addEventListener('change', applyFilters);
+    resetFilters.addEventListener('click', () => { searchInput.value=''; filterSkill.value=''; applyFilters(); });
+
+    // Modal logic
+    const modal = document.getElementById('modal');
+    const openCreate = document.getElementById('openCreate');
+    const closeModal = document.getElementById('closeModal');
+    const cancelCreate = document.getElementById('cancelCreate');
+    const createForm = document.getElementById('createForm');
+
+    function showModal() { modal.classList.remove('hidden'); modal.querySelector('input, textarea').focus(); }
+    function hideModal() { modal.classList.add('hidden'); }
+
+    openCreate.addEventListener('click', showModal);
+    closeModal.addEventListener('click', hideModal);
+    cancelCreate.addEventListener('click', hideModal);
+
+    createForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('teamName').value.trim();
+      const desc = document.getElementById('desc').value.trim();
+      const skills = (document.getElementById('skills').value || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+      if (!name) return alert('Team name is required');
+      const newTeam = { id: 't'+Date.now(), name, desc, skills, members: 1, status: 'open' };
+      teams.unshift(newTeam);
+      saveTeams(teams);
+      renderTeams(teams);
+      createForm.reset();
+      hideModal();
+    });
+
+    // delegated action listeners
+    document.addEventListener('click', (e) => {
+      const pid = e.target.getAttribute('data-id');
+      if (e.target.classList.contains('applyBtn')) {
+        const team = teams.find(t=>t.id===pid);
+        if (!team) return;
+        if (team.members >= 5) return alert('Team is full');
+        team.members += 1;
+        if (team.members >= 5) team.status='full';
+        saveTeams(teams);
+        applyFilters();
+        alert('Applied — owner will be notified (demo)');
+      }
+      if (e.target.classList.contains('previewBtn')) {
+        const team = teams.find(t=>t.id===pid);
+        if (!team) return;
+        alert(`${team.name}\n\n${team.desc}\n\nSkills: ${team.skills.join(', ')}`);
+      }
+    });
+
+    // UI niceties
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.getElementById('ctaCreate').addEventListener('click', showModal);
+    document.getElementById('ctaDiscover').addEventListener('click', () => { document.getElementById('teams').scrollIntoView({behavior:'smooth'}); });
+
+    // Dark toggle
+    const darkToggle = document.getElementById('darkToggle');
+    darkToggle.addEventListener('click', () => {
+      const pressed = darkToggle.getAttribute('aria-pressed') === 'true';
+      darkToggle.setAttribute('aria-pressed', String(!pressed));
+      document.documentElement.classList.toggle('dark');
+      if (document.documentElement.classList.contains('dark')) {
+        document.body.classList.remove('bg-gradient-to-br');
+        document.body.style.background = '#0f172a';
+      } else {
+        document.body.style.background = '';
+      }
+    });
+
+    // small accessibility: close modal with escape
+    document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideModal(); });
+
+  </script>
+</body>
+</html>
