@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Quick Teams — find your missing teammate for hackathons, projects and clubs. Smart matching, real-time search, and clean UI." />
+  <meta name="description" content="Quick Teams — find your missing teammate for hackathons, projects and clubs. Smart matching, instant search, and clean UI." />
   <title>Quick Teams — Find Your Missing Piece</title>
 
   <!-- Tailwind CDN (full) + experimental forms & typography plugins via CDN config -->
@@ -47,7 +47,7 @@
 
     <!-- Header -->
     <header class="flex items-center justify-between gap-6">
-      <a href="#" class="flex items-center gap-3" aria-label="Quick Teams home">
+      <a href="index.html" class="flex items-center gap-3" aria-label="Quick Teams home">
         <svg class="w-12 h-12 logo-mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
           <rect x="2" y="2" width="60" height="60" rx="12" fill="url(#g)" />
           <defs>
@@ -65,8 +65,11 @@
 
       <nav class="flex items-center gap-4">
         <button id="darkToggle" aria-pressed="false" class="bg-white/6 px-3 py-2 rounded-md text-sm">Dark</button>
-        <a href="#teams" class="hidden md:inline-block px-4 py-2 border rounded-md border-white/6">Explore Teams</a>
+        <a id="navExplore" href="#teams" class="hidden md:inline-block px-4 py-2 border rounded-md border-white/6">Explore Teams</a>
         <button id="openCreate" class="ml-2 inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md text-white">Create Team</button>
+
+        <!-- NEW: Logout button styled red (hidden until auth state confirms signed-in) -->
+        <button id="logoutBtn" class="ml-2 inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md text-white hidden">Logout</button>
       </nav>
     </header>
 
@@ -201,8 +204,39 @@
     </div>
   </div>
 
-  <script>
-    // Tiny client-side app: stores teams in localStorage and powers search/filter
+  <!-- Firebase + App Logic (module for imports) -->
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+
+    // Use the same config you used on your auth page
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
+      authDomain: "quick-teams-29685.firebaseapp.com",
+      projectId: "quick-teams-29685",
+      storageBucket: "quick-teams-29685.firebasestorage.app",
+      messagingSenderId: "814121228704",
+      appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
+      measurementId: "G-Y1EY57N7BC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // DOM elements
+    const teamGrid = document.getElementById('teamGrid');
+    const searchInput = document.getElementById('search');
+    const filterSkill = document.getElementById('filterSkill');
+    const resetFilters = document.getElementById('resetFilters');
+    const modal = document.getElementById('modal');
+    const openCreate = document.getElementById('openCreate');
+    const closeModal = document.getElementById('closeModal');
+    const cancelCreate = document.getElementById('cancelCreate');
+    const createForm = document.getElementById('createForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // Basic teams data (same as before)
     const sampleTeams = [
       { id: 't1', name: 'AI-powered Chatbot', desc: 'Chatbot for event portal.', skills: ['python','ml','web'], members: 3, status: 'open' },
       { id: 't2', name: 'Mobile Game Dev', desc: 'Fun mobile game using Unity.', skills: ['unity','c#','backend'], members: 2, status: 'looking' },
@@ -217,8 +251,8 @@
     }
     function saveTeams(list) { localStorage.setItem(storageKey, JSON.stringify(list)); }
 
-    // Render helpers
-    const teamGrid = document.getElementById('teamGrid');
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
     function renderTeams(list) {
       teamGrid.innerHTML = '';
       if (!list.length) { teamGrid.innerHTML = '<div class="text-center text-slate-400 col-span-full">No teams found — create one!</div>'; return; }
@@ -248,17 +282,11 @@
       });
     }
 
-    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-
     // initialize
     let teams = loadTeams();
     renderTeams(teams);
 
     // Search + filter
-    const searchInput = document.getElementById('search');
-    const filterSkill = document.getElementById('filterSkill');
-    const resetFilters = document.getElementById('resetFilters');
-
     function applyFilters() {
       const q = (searchInput.value || '').toLowerCase().trim();
       const skill = filterSkill.value;
@@ -275,12 +303,6 @@
     resetFilters.addEventListener('click', () => { searchInput.value=''; filterSkill.value=''; applyFilters(); });
 
     // Modal logic
-    const modal = document.getElementById('modal');
-    const openCreate = document.getElementById('openCreate');
-    const closeModal = document.getElementById('closeModal');
-    const cancelCreate = document.getElementById('cancelCreate');
-    const createForm = document.getElementById('createForm');
-
     function showModal() { modal.classList.remove('hidden'); modal.querySelector('input, textarea').focus(); }
     function hideModal() { modal.classList.add('hidden'); }
 
@@ -344,6 +366,33 @@
     // small accessibility: close modal with escape
     document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideModal(); });
 
+    // ---------- AUTH: show logout and protect page ----------
+    // If user is not authenticated, redirect to auth page (auth.html).
+    // If user is authenticated, reveal logout button.
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // not signed in → send to auth page
+        window.location.href = 'auth.html';
+        return;
+      }
+      // signed in → show logout
+      logoutBtn.classList.remove('hidden');
+      // (optional) you can also show user.email somewhere if you want:
+      // console.log('Signed in as', user.email);
+    });
+
+    // Logout action
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        // after sign out, send back to auth page
+        window.location.href = 'auth.html';
+      } catch (err) {
+        console.error('Sign out error', err);
+        alert('Could not sign out. Check console for details.');
+      }
+    });
   </script>
 </body>
 </html>
+

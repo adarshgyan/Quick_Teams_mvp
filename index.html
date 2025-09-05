@@ -1,246 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quick Teams - Find your missing piece</title>
-  <!-- Tailwind CSS CDN -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quick Teams — Landing</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
-    
-   body {
-  font-family: 'Inter', sans-serif;
-  background: radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.2), transparent 60%),
-              radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.25), transparent 60%),
-              linear-gradient(135deg, #0f172a, #1e3a8a 40%, #4c1d95 70%, #9333ea 100%);
-  color: #f9d8c0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  margin: 0;
-  padding: 0 1rem;
-  position: relative;
-  overflow: hidden;
-}
-
-
-    .main-container {
-      max-width: 460px;
-      width: 100%;
-      z-index: 10;
-    }
-
-    .logo-text {
-      font-weight: 900;
-      font-size: 6.5rem;
-      letter-spacing: -0.07em;
-      user-select: none;
-      line-height: 1;
-    }
-
-    .subtitle {
-      font-weight: 600;
-      font-size: 1.2rem;
-      margin-top: 0.4rem;
-      letter-spacing: 1px;
-      user-select: none;
-    }
-
-    .divider-line {
-      border-top: 2px solid #f9d8c0;
-      width: 90px;
-      margin: 0 1rem;
-      margin-top: 10px;
-    }
-
-    .get-started {
-      margin-top: 3.2rem;
-      padding: 0.9rem 3rem;
-      font-weight: 700;
-      font-size: 1.3rem;
-      color: #f9d8c0;
-      border: 2.5px solid #f9d8c0;
-      border-radius: 9999px;
-      background-color: #a15d6a88;
-      box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.27), inset -2px -1px 8px #fff5de88;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
-    }
-
-    .get-started:hover {
-      background-color: #f9d8c0cc;
-      box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4), inset -2px -1px 12px #fff5decc;
-      transform: translateY(-2px);
-    }
-
-    .get-started:active {
-      transform: translateY(1px);
-      box-shadow: inset 1px 1px 5px #d3a67a;
-    }
-
-    .typing-container {
-      margin-top: 1.5rem;
-      display: inline-block;
-    }
-    .typed-text {
-      color: #f9d8c0;
-      font-size: 1.5rem;
-      font-weight: 500;
-      font-family: 'Dancing Script', cursive;
-      white-space: nowrap;
-      overflow: hidden;
-      border-right: 0.15em solid #f9d8c0;
-      animation: typing 2.5s steps(28, end), blink-caret 0.75s step-end infinite;
-    }
-
-    @keyframes typing {
-      from { width: 0 }
-      to { width: 100% }
-    }
-
-    @keyframes blink-caret {
-      from, to { border-color: transparent }
-      50% { border-color: #f9d8c0; }
-    }
-
-    @media (max-width: 425px) {
-      .logo-text {
-        font-size: 4.5rem;
-      }
-      .get-started {
-        font-size: 1.1rem;
-        padding: 0.75rem 2rem;
-      }
-    }
+    body { font-family: Inter, sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; margin:0; background:linear-gradient(135deg,#0f172a,#4c1d95); color:#f9d8c0; }
+    .card { max-width:520px; width:100%; padding:2rem; border-radius:1rem; background:rgba(255,255,255,0.03); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+    .cta { margin-top:1.5rem; padding:.9rem 2rem; border-radius:999px; background:#a15d6a88; border:2px solid #f9d8c0; cursor:pointer; }
   </style>
 </head>
 <body>
-
-  <!-- Landing Page Section -->
-  <main id="landing-page" class="main-container mx-auto flex flex-col items-center">
-    <div class="logo-text select-none">
-      <p>Q U I C K</p>
-      <p>T E A M S</p>
+  <div class="card">
+    <h1 class="text-4xl font-extrabold">Quick Teams</h1>
+    <p class="mt-2 text-slate-200">Find your missing piece — join projects and hackathons fast.</p>
+    <div class="mt-6">
+      <button id="explore-btn" class="cta">Explore!</button>
+      <a href="auth.html" class="ml-3 text-sm underline">Sign in</a>
     </div>
-    <div class="flex items-center justify-center mt-2 w-full">
-      <div class="divider-line"></div>
-      <p class="subtitle tracking-widest">FIND YOUR MISSING PIECE</p>
-      <div class="divider-line"></div>
-    </div>
-    <button id="explore-btn" 
-        class="get-started" 
-        aria-label="Get Started with Quick Teams">Explore!</button>
-    <div class="typing-container">
-      <p id="typing-text" class="typed-text"></p>
-    </div>
-  </main>
+  </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const typingText = document.getElementById('typing-text');
-      const textToType = "find your missing teammates...";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
 
-      function typeWriter(text, element, i = 0) {
-        if (i < text.length) {
-          element.textContent += text.charAt(i);
-          setTimeout(() => typeWriter(text, element, i + 1), 75);
-        }
-      }
-      typeWriter(textToType, typingText);
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
+      authDomain: "quick-teams-29685.firebaseapp.com",
+      projectId: "quick-teams-29685",
+      storageBucket: "quick-teams-29685.firebasestorage.app",
+      messagingSenderId: "814121228704",
+      appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
+      measurementId: "G-Y1EY57N7BC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const exploreBtn = document.getElementById('explore-btn');
+
+    exploreBtn.addEventListener('click', () => {
+      // Use onAuthStateChanged once, then unsubscribe immediately
+      const unsub = onAuthStateChanged(auth, (user) => {
+        unsub();
+        window.location.href = user ? 'dashboard.html' : 'auth.html';
+      });
     });
   </script>
-<div class="orb orb1"></div>
-<div class="orb orb2"></div>
-<div class="orb orb3"></div>
-
-<style>
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.35;
-}
-
-/* no animation, just glowing spots */
-.orb1 {
-  width: 240px;
-  height: 240px;
-  top: -40px;
-  left: -40px;
-  background: radial-gradient(circle, rgba(96,165,250,0.8), transparent 70%);
-}
-.orb2 {
-  width: 200px;
-  height: 200px;
-  bottom: -50px;
-  right: -50px;
-  background: radial-gradient(circle, rgba(168,85,247,0.7), transparent 70%);
-}
-.orb3 {
-  width: 160px;
-  height: 160px;
-  top: 60%;
-  left: 30%;
-  background: radial-gradient(circle, rgba(244,114,182,0.6), transparent 70%);
-}
-
-
-@keyframes float {
-  from { transform: translateY(0) translateX(0); }
-  to { transform: translateY(-20px) translateX(15px); }
-}
-
-
-@keyframes float {
-  from { transform: translateY(0) translateX(0); }
-  to { transform: translateY(-20px) translateX(15px); }
-}
-
-
-  @keyframes float {
-    from { transform: translateY(0) translateX(0); }
-    to { transform: translateY(-40px) translateX(30px); }
-  }
-</style>
-<!-- Firebase App + Auth -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
-    authDomain: "quick-teams-29685.firebaseapp.com",
-    projectId: "quick-teams-29685",
-    storageBucket: "quick-teams-29685.firebasestorage.app",
-    messagingSenderId: "814121228704",
-    appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
-    measurementId: "G-Y1EY57N7BC"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  const exploreBtn = document.getElementById('explore-btn');
-
-  exploreBtn.addEventListener('click', () => {
-    // Check if user is logged in
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User logged in → dashboard
-        window.location.href = 'dashboard.html';
-      } else {
-        // User not logged in → auth page
-        window.location.href = 'auth.html';
-      }
-    });
-  });
-</script>
-
 </body>
 </html>

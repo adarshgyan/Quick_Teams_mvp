@@ -1,129 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quick Teams - Login / Signup</title>
-  <!-- Tailwind CSS CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quick Teams — Login / Signup</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.2), transparent 60%),
-                  radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.25), transparent 60%),
-                  linear-gradient(135deg, #0f172a, #1e3a8a 40%, #4c1d95 70%, #9333ea 100%);
-      color: #f9d8c0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      margin: 0;
-      padding: 0 1rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .auth-box {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      padding: 2.5rem 2rem;
-      border-radius: 1.5rem;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-      z-index: 10;
-    }
-
-    .auth-box h2 {
-      font-family: 'Dancing Script', cursive;
-      font-size: 2.5rem;
-      margin-bottom: 1.5rem;
-      color: #f9d8c0;
-    }
-
-    .auth-input {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      margin-bottom: 1rem;
-      border-radius: 0.75rem;
-      border: 1.5px solid #f9d8c0;
-      background-color: rgba(255,255,255,0.05);
-      color: #f9d8c0;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-
-    .auth-input:focus {
-      border-color: #a855f7;
-      box-shadow: 0 0 10px #a855f7aa;
-      background-color: rgba(255,255,255,0.1);
-    }
-
-    .auth-btn {
-      width: 100%;
-      padding: 0.9rem;
-      margin-top: 0.5rem;
-      font-weight: 600;
-      font-size: 1.1rem;
-      border-radius: 9999px;
-      border: 2px solid #f9d8c0;
-      background-color: #a15d6a88;
-      color: #f9d8c0;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .auth-btn:hover {
-      background-color: #f9d8c0cc;
-      color: #1e3a8a;
-    }
-
-    .toggle-link {
-      margin-top: 1rem;
-      font-size: 0.95rem;
-      cursor: pointer;
-      text-decoration: underline;
-      color: #f9d8c0aa;
-      transition: color 0.3s;
-    }
-
-    .toggle-link:hover {
-      color: #f9d8c0;
-    }
-
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      opacity: 0.35;
-    }
-
-    .orb1 { width: 240px; height: 240px; top: -40px; left: -40px; background: radial-gradient(circle, rgba(96,165,250,0.8), transparent 70%); }
-    .orb2 { width: 200px; height: 200px; bottom: -50px; right: -50px; background: radial-gradient(circle, rgba(168,85,247,0.7), transparent 70%); }
-    .orb3 { width: 160px; height: 160px; top: 60%; left: 30%; background: radial-gradient(circle, rgba(244,114,182,0.6), transparent 70%); }
+    body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at 20% 30%, rgba(56,189,248,0.12), transparent 60%), linear-gradient(135deg,#0f172a,#1e3a8a 40%); min-height:100vh; display:flex; align-items:center; justify-content:center; color:#f9d8c0; margin:0; padding:1rem; }
+    .auth-box { background: rgba(255,255,255,0.05); padding:2rem; border-radius:1rem; width:100%; max-width:420px; box-shadow:0 8px 30px rgba(0,0,0,0.5); text-align:center; }
+    .auth-input { width:100%; padding:.85rem 1rem; margin-bottom:1rem; border-radius:.75rem; border:1.5px solid #f9d8c0; background: rgba(255,255,255,0.03); color:inherit; }
+    .auth-btn { width:100%; padding:.9rem; border-radius:9999px; border:2px solid #f9d8c0; background:#a15d6a88; color:#f9d8c0; font-weight:600; cursor:pointer; }
+    .toggle-link { margin-top:1rem; cursor:pointer; color: #f9d8c0aa; text-decoration:underline; }
   </style>
 </head>
 <body>
-
-  <!-- Authentication Box -->
   <div class="auth-box" id="auth-box">
-    <h2 id="form-title">Login</h2>
-    <input type="email" id="email" class="auth-input" placeholder="Email" required>
-    <input type="password" id="password" class="auth-input" placeholder="Password" required>
+    <h2 id="form-title" style="font-family:'Dancing Script',cursive;font-size:2rem;margin-bottom:1rem;">Login</h2>
+    <input type="email" id="email" class="auth-input" placeholder="Email" />
+    <input type="password" id="password" class="auth-input" placeholder="Password" />
     <button id="auth-btn" class="auth-btn">Login</button>
     <p class="toggle-link" id="toggle-auth">Don't have an account? Signup</p>
   </div>
 
-  <!-- Glowing Orbs -->
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-  <div class="orb orb3"></div>
-
-  <!-- Firebase + Auth Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
@@ -157,31 +57,28 @@
     });
 
     authBtn.addEventListener('click', async () => {
-      const email = emailInput.value;
-      const password = passwordInput.value;
-
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
       if (!email || !password) return alert("Please fill all fields!");
-
       try {
         if (isLogin) {
           await signInWithEmailAndPassword(auth, email, password);
         } else {
           await createUserWithEmailAndPassword(auth, email, password);
         }
-        // redirect to dashboard
+        // On success, firebase auth state change will redirect below — but redirect explicitly as well:
         window.location.href = 'dashboard.html';
       } catch (error) {
-        alert(error.message);
+        alert(error.message || 'Auth error');
       }
     });
 
-    // Protect dashboard: if user already logged in, redirect automatically
+    // If already signed in, send to dashboard immediately
     onAuthStateChanged(auth, (user) => {
       if (user) {
         window.location.href = 'dashboard.html';
       }
     });
   </script>
-
 </body>
 </html>
