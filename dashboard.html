@@ -98,7 +98,7 @@
 <div id="createTeamModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
   <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4 modal-content-responsive">
     <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Create a New Team</h2><button id="closeModalBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div>
-    <form id="createTeamForm"><div class="mb-4"><label for="teamName" class="block text-sm font-medium text-slate-300 mb-2">Team Name</label><input type="text" id="teamName" name="teamName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required></div><div class="mb-4"><label for="description" class="block text-sm font-medium text-slate-300 mb-2">Description</label><input type="text" id="description" name="description" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="mb-6"><label for="skills" class="block text-sm font-medium text-slate-300 mb-2">Skills Needed (comma-separated)</label><input type="text" id="skills" name="skills" placeholder="e.g., React, Node.js, Figma" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="flex justify-end gap-4"><button type="button" id="cancelBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button><button type="submit" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button></div></form>
+    <form id="createTeamForm"><div class="mb-4"><label for="teamName" class="block text-sm font-medium text-slate-300 mb-2">Team Name</label><input type="text" id="teamName" name="teamName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required></div><div class="mb-4"><label for="competitionName" class="block text-sm font-medium text-slate-300 mb-2">Competition Name</label><input type="text" id="competitionName" name="competitionName" placeholder="e.g., AI Hackathon, Game Jam" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="mb-4"><label for="description" class="block text-sm font-medium text-slate-300 mb-2">Description</label><input type="text" id="description" name="description" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="mb-4"><label for="teamSize" class="block text-sm font-medium text-slate-300 mb-2">Team Size</label><select id="teamSize" name="teamSize" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required><option value="2">2 members</option><option value="3">3 members</option><option value="4" selected>4 members</option><option value="5">5 members</option><option value="6">6 members</option></select></div><div class="mb-6"><label for="skills" class="block text-sm font-medium text-slate-300 mb-2">Skills Needed (comma-separated)</label><input type="text" id="skills" name="skills" placeholder="e.g., React, Node.js, Figma" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="flex justify-end gap-4"><button type="button" id="cancelBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button><button type="submit" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button></div></form>
   </div>
 </div>
 
@@ -630,24 +630,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Loaded team from Firebase:', teamData.name, 'ID:', doc.id);
                 });
                 
-                // Merge Firebase teams with local teams, avoiding duplicates
+                // Replace local teams with Firebase teams to ensure synchronization
                 if (!Array.isArray(teams)) {
                     console.warn('Teams is not an array, resetting to initial teams');
                     teams = initialTeams;
                 }
                 
-                const existingIds = new Set(teams.map(team => team.firebaseId || team.id));
-                const newTeams = firebaseTeams.filter(team => !existingIds.has(team.firebaseId || team.id));
+                // Keep local teams that don't have Firebase IDs (fallback for offline)
+                const localOnlyTeams = teams.filter(team => !team.firebaseId);
                 
-                console.log(`Found ${newTeams.length} new teams to add to local storage`);
+                // Combine Firebase teams with local-only teams
+                teams = [...firebaseTeams, ...localOnlyTeams];
                 
-                if (newTeams.length > 0) {
-                    teams = [...teams, ...newTeams];
-                    localStorage.setItem('teams', JSON.stringify(teams));
-                    console.log(`Successfully loaded ${newTeams.length} new teams from Firebase`);
-                } else {
-                    console.log('No new teams to load from Firebase');
-                }
+                // Save updated teams to localStorage
+                localStorage.setItem('teams', JSON.stringify(teams));
+                console.log(`Successfully synchronized ${firebaseTeams.length} teams from Firebase`);
+                console.log(`Kept ${localOnlyTeams.length} local-only teams`);
             } else {
                 console.warn('Firebase functions not available for loading teams');
             }
@@ -696,7 +694,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+  import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
   const firebaseConfig = { apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU", authDomain: "quick-teams-29685.firebaseapp.com", projectId: "quick-teams-29685", storageBucket: "quick-teams-29685.firebasestorage.app", messagingSenderId: "814121228704", appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5", measurementId: "G-Y1EY57N7BC" };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -779,13 +778,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('logoutBtn').addEventListener('click', () => { 
-    signOut(auth).then(() => { 
-      console.log('User signed out.'); 
-      window.location.href = 'index.html'; 
-    }).catch((error) => { 
-      console.error('Sign out error:', error); 
-    }); 
+  document.getElementById('logoutBtn').addEventListener('click', async () => { 
+    try {
+      console.log('Starting logout process...');
+      
+      // Clear local storage
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('teams');
+      localStorage.removeItem('appliedTeamIds');
+      localStorage.removeItem('registeredEvents');
+      
+      // Sign out from Firebase
+      await signOut(auth);
+      console.log('User signed out successfully.');
+      
+      // Redirect to login page
+      window.location.href = 'index.html';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      alert('Error signing out. Please try again.');
+    }
   });
 </script>
 
