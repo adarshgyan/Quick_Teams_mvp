@@ -133,9 +133,9 @@
       <p class="subtitle tracking-widest">FIND YOUR MISSING PIECE</p>
       <div class="divider-line"></div>
     </div>
-    <button onclick="window.location.href='dashboard.html'" 
-            class="get-started" 
-            aria-label="Get Started with Quick Teams">Explore!</button>
+    <button id="explore-btn" 
+        class="get-started" 
+        aria-label="Get Started with Quick Teams">Explore!</button>
     <div class="typing-container">
       <p id="typing-text" class="typed-text"></p>
     </div>
@@ -207,6 +207,40 @@
     to { transform: translateY(-40px) translateX(30px); }
   }
 </style>
+<!-- Firebase App + Auth -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
+    authDomain: "quick-teams-29685.firebaseapp.com",
+    projectId: "quick-teams-29685",
+    storageBucket: "quick-teams-29685.firebasestorage.app",
+    messagingSenderId: "814121228704",
+    appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
+    measurementId: "G-Y1EY57N7BC"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const exploreBtn = document.getElementById('explore-btn');
+
+  exploreBtn.addEventListener('click', () => {
+    // Check if user is logged in
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User logged in → dashboard
+        window.location.href = 'dashboard.html';
+      } else {
+        // User not logged in → auth page
+        window.location.href = 'auth.html';
+      }
+    });
+  });
+</script>
 
 </body>
 </html>
