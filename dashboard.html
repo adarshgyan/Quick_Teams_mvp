@@ -1,398 +1,236 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Quick Teams — find your missing teammate for hackathons, projects and clubs. Smart matching, instant search, and clean UI." />
-  <title>Quick Teams — Find Your Missing Piece</title>
-
-  <!-- Tailwind CDN (full) + experimental forms & typography plugins via CDN config -->
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: '#4f46e5',
-            accent: '#f97316'
-          },
-          fontFamily: {
-            display: ['Dancing Script', 'ui-sans-serif', 'system-ui'],
-            body: ['Inter', 'ui-sans-serif', 'system-ui']
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Teams Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      body { 
+        font-family: 'Inter', sans-serif; 
+        background-color: #0f172a; 
+        color: #e2e8f0; 
+      }
+      .glass { 
+        background: rgba(30, 41, 59, 0.5); /* bg-slate-800/50 */
+        backdrop-filter: blur(10px); 
+        border-radius: 1rem; 
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .glass:hover { 
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); 
+        transform: translateY(-5px); 
+      }
+      .team-card { 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: space-between; 
+        height: 100%; 
+      }
+      @media (max-width: 640px) {
+        .modal-content-responsive {
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
         }
       }
-    }
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
-
-  <style>
-    /* small custom helper styles (kept outside Tailwind for some fine-tuning) */
-    :root { --glass: rgba(255,255,255,0.06); --glass-2: rgba(255,255,255,0.08); }
-    .glass { background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); backdrop-filter: blur(6px); }
-    .logo-mark { filter: drop-shadow(0 6px 18px rgba(79,70,229,0.18)); }
-    /* accessibility focus ring */
-    :focus { outline: none; box-shadow: 0 0 0 4px rgba(79,70,229,0.12); border-radius: 6px; }
-    /* subtle floating animation for hero svg */
-    @keyframes floaty { 0% { transform: translateY(0) } 50% { transform: translateY(-8px) } 100% { transform: translateY(0) } }
-    .floaty { animation: floaty 6s ease-in-out infinite; }
-  </style>
+    </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-slate-100 font-body antialiased">
-  <!-- Page wrapper -->
-  <div class="max-w-7xl mx-auto px-6 py-10">
+<body class="min-h-screen px-4 sm:px-6 py-10">
 
-    <!-- Header -->
-    <header class="flex items-center justify-between gap-6">
-      <a href="index.html" class="flex items-center gap-3" aria-label="Quick Teams home">
-        <svg class="w-12 h-12 logo-mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-          <rect x="2" y="2" width="60" height="60" rx="12" fill="url(#g)" />
-          <defs>
-            <linearGradient id="g" x1="0" x2="1">
-              <stop offset="0" stop-color="#7c3aed" />
-              <stop offset="1" stop-color="#06b6d4" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <div>
-          <span class="block text-2xl font-extrabold">Quick <span class="text-accent">Teams</span></span>
-          <span class="block text-xs text-slate-300 -mt-1">Find your missing piece</span>
-        </div>
-      </a>
-
-      <nav class="flex items-center gap-4">
-        <button id="darkToggle" aria-pressed="false" class="bg-white/6 px-3 py-2 rounded-md text-sm">Dark</button>
-        <a id="navExplore" href="#teams" class="hidden md:inline-block px-4 py-2 border rounded-md border-white/6">Explore Teams</a>
-        <button id="openCreate" class="ml-2 inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md text-white">Create Team</button>
-
-        <!-- NEW: Logout button styled red (hidden until auth state confirms signed-in) -->
-        <button id="logoutBtn" class="ml-2 inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md text-white hidden">Logout</button>
-      </nav>
-    </header>
-
-    <!-- Hero -->
-    <section class="mt-12 grid lg:grid-cols-2 gap-12 items-center">
-      <div>
-        <h1 class="text-5xl sm:text-6xl font-extrabold leading-tight">Find collaborators fast — <span class="text-accent">join</span> the right team.</h1>
-        <p class="mt-4 text-slate-300 max-w-xl">Smart filters, instant search and privacy-first team creation for hackathons, projects and clubs. Ship prototypes with teammates who complement your skills.</p>
-
-        <div class="mt-8 flex gap-3">
-          <a id="ctaDiscover" href="#teams" class="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-lg">Explore Teams</a>
-          <button id="ctaCreate" class="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/8 text-white border border-white/10">Create a Team</button>
-        </div>
-
-        <ul class="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm text-slate-300 max-w-md">
-          <li class="flex items-center gap-2"><strong class="w-8 inline-block text-accent">125+</strong>Projects</li>
-          <li class="flex items-center gap-2"><strong class="w-8 inline-block text-accent">350+</strong>Members</li>
-          <li class="flex items-center gap-2"><strong class="w-8 inline-block text-accent">24h</strong>Fast matches</li>
-        </ul>
-      </div>
-
-      <div class="relative">
-        <!-- Floating mockup / card -->
-        <div class="bg-gradient-to-br from-white/6 to-white/3 p-6 rounded-2xl glass shadow-2xl floaty">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-lg font-semibold text-white">Hackathon — Web Dev</h3>
-              <p class="text-sm text-slate-200/80">Looking for a Backend dev and UI/UX designer</p>
-            </div>
-            <div class="text-right">
-              <span class="text-xs text-slate-200/70">Open</span>
-              <div class="mt-2 text-sm text-slate-300">3/5 members</div>
-            </div>
-          </div>
-
-          <div class="mt-4 flex items-center gap-3">
-            <div class="flex -space-x-3">
-              <img alt="A" src="https://placehold.co/40x40/7c3aed/fff?text=J" class="w-10 h-10 rounded-full ring-2 ring-white/40" />
-              <img alt="B" src="https://placehold.co/40x40/06b6d4/fff?text=A" class="w-10 h-10 rounded-full ring-2 ring-white/40" />
-            </div>
-            <div class="flex-1">
-              <div class="flex gap-2 flex-wrap">
-                <span class="px-3 py-1 rounded-full bg-white/8 text-xs">React</span>
-                <span class="px-3 py-1 rounded-full bg-white/8 text-xs">Node.js</span>
-                <span class="px-3 py-1 rounded-full bg-white/8 text-xs">UI/UX</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-4 flex gap-3">
-            <button class="flex-1 rounded-full px-4 py-2 bg-accent text-white">Apply</button>
-            <button class="rounded-full px-4 py-2 border border-white/10">Preview</button>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Controls & Search -->
-    <section id="teams" class="mt-16">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex-1">
-          <label for="search" class="sr-only">Search teams</label>
-          <input id="search" type="search" placeholder="Search teams, skills or descriptions" class="w-full rounded-md px-4 py-3 bg-white/6 placeholder:text-slate-300" />
-        </div>
-
-        <div class="flex gap-3 items-center">
-          <select id="filterSkill" class="rounded-md px-3 py-2 bg-white/6">
-            <option value="">All skills</option>
-            <option value="react">React</option>
-            <option value="node">Node.js</option>
-            <option value="python">Python</option>
-            <option value="ml">Machine Learning</option>
-            <option value="unity">Unity</option>
-          </select>
-          <button id="resetFilters" class="px-3 py-2 rounded-md bg-white/6">Reset</button>
-        </div>
-      </div>
-
-      <!-- Team grid -->
-      <div id="teamGrid" class="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"></div>
-    </section>
-
-    <!-- Features & Why it works -->
-    <section class="mt-16 grid md:grid-cols-3 gap-8">
-      <article class="glass p-6 rounded-xl">
-        <h4 class="font-semibold">Smart Matching</h4>
-        <p class="mt-2 text-sm text-slate-300">Filter by skills, availability and project type. Quick matches with minimal setup.</p>
-      </article>
-      <article class="glass p-6 rounded-xl">
-        <h4 class="font-semibold">Privacy & Control</h4>
-        <p class="mt-2 text-sm text-slate-300">You control what you share. Approve join requests and protect your project idea.</p>
-      </article>
-      <article class="glass p-6 rounded-xl">
-        <h4 class="font-semibold">Built for speed</h4>
-        <p class="mt-2 text-sm text-slate-300">Optimized for quick discovery during short hackathons and events.</p>
-      </article>
-    </section>
-
-    <!-- Footer -->
-    <footer class="mt-20 text-center text-slate-400 text-sm">
-      Made with ❤️ for your collaborations! • <span id="year"></span>
-    </footer>
-
+<header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+  <h1 class="text-3xl font-bold">Quick Teams</h1>
+  <div class="flex gap-4 items-center">
+    <button id="createTeamBtnHeader" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button>
+    <button id="logoutBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Log Out</button>
   </div>
+</header>
 
-  <!-- Create Team Modal (accessible) -->
-  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="bg-slate-900 max-w-2xl w-full rounded-xl p-6 shadow-2xl">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h3 id="modalTitle" class="text-lg font-semibold">Create a team</h3>
-          <p class="text-sm text-slate-400">Share the skills you're looking for and invite collaborators.</p>
-        </div>
-        <button id="closeModal" aria-label="Close" class="text-slate-400">✕</button>
-      </div>
+<section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+  <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/handshake.png" class="mb-3" alt="Matchmaking Icon"/><h3 class="font-semibold text-white mb-1">Matchmaking</h3><p class="text-sm text-slate-300">Find teammates who fit your skills and goals.</p></div>
+  <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/skills.png" class="mb-3" alt="Skills Icon" /><h3 class="font-semibold text-white mb-1">Show Your Skills</h3><p class="text-sm text-slate-300">Highlight your strengths and discover others.</p></div>
+  <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/clock.png" class="mb-3" alt="Clock Icon"/><h3 class="font-semibold text-white mb-1">Match on Time</h3><p class="text-sm text-slate-300">Team up with people who are actually available.</p></div>
+  <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/group.png" class="mb-3" alt="Community Icon"/><h3 class="font-semibold text-white mb-1">Community Connect</h3><p class="text-sm text-slate-300">Join events, clubs, or games easily.</p></div>
+</section>
 
-      <form id="createForm" class="mt-4 grid grid-cols-1 gap-3">
-        <label class="sr-only" for="teamName">Team name</label>
-        <input id="teamName" name="teamName" placeholder="Team name (e.g., The Code Breakers)" required class="px-4 py-3 rounded-md bg-white/6" />
-
-        <label class="sr-only" for="desc">Description</label>
-        <textarea id="desc" name="description" rows="3" placeholder="Short description" class="px-4 py-3 rounded-md bg-white/6"></textarea>
-
-        <input id="skills" name="skills" placeholder="Skills (comma separated)" class="px-4 py-3 rounded-md bg-white/6" />
-
-        <div class="flex gap-2">
-          <button type="submit" class="flex-1 px-4 py-2 rounded-md bg-accent text-white">Create</button>
-          <button type="button" id="cancelCreate" class="px-4 py-2 rounded-md border border-white/8">Cancel</button>
-        </div>
-      </form>
+<section class="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-10">
+  <div id="userProfileCard" class="glass flex items-center gap-4 p-4 flex-1 relative">
     </div>
+  <div class="flex gap-2 items-center">
+    <label class="font-medium text-slate-300">My Availability:</label>
+    <select id="availabilityFilter" class="rounded-md px-3 py-2 bg-slate-700 text-white border border-slate-500 hover:bg-slate-600 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+      <option value="Anytime">Anytime</option>
+      <option value="Weekends">Weekends</option>
+      <option value="Evenings">Evenings</option>
+    </select>
   </div>
+</section>
 
-  <!-- Firebase + App Logic (module for imports) -->
-  <script type="module">
-    // Firebase imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+<section>
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-bold">Available Teams (Best Matches First)</h2>
+  </div>
+  <div id="search-filter-controls" class="mb-6">
+      <div class="glass flex flex-col sm:flex-row gap-4 p-4">
+          <input type="search" id="searchInput" placeholder="Search by name or description..." class="flex-grow w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-slate-400 focus:ring-2 focus:ring-purple-500">
+          <select id="skillFilter" class="bg-slate-700 border border-slate-600 rounded-md text-white px-4 py-2 focus:ring-2 focus:ring-purple-500"><option value="">Filter by skill</option></select>
+          <button id="resetFilters" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Reset</button>
+      </div>
+  </div>
+  <div id="teamGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</section>
 
-    // Use the same config you used on your auth page
-    const firebaseConfig = {
-      apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
-      authDomain: "quick-teams-29685.firebaseapp.com",
-      projectId: "quick-teams-29685",
-      storageBucket: "quick-teams-29685.firebasestorage.app",
-      messagingSenderId: "814121228704",
-      appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
-      measurementId: "G-Y1EY57N7BC"
+<section class="mt-10">
+  <h2 class="text-2xl font-bold mb-4">Upcoming Events & Clubs</h2>
+  <div class="flex gap-4 overflow-x-auto py-2">
+    <div class="glass p-4 min-w-[220px] rounded-xl flex flex-col justify-between"><div><h3 class="font-semibold text-white">AI Hackathon</h3><p class="text-sm text-slate-300 mt-1">Sep 20 • Web & AI Teams</p></div><button class="mt-2 w-full px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition text-sm">Join</button></div>
+    <div class="glass p-4 min-w-[220px] rounded-xl flex flex-col justify-between"><div><h3 class="font-semibold text-white">Game Dev Club</h3><p class="text-sm text-slate-300 mt-1">Weekly sessions • Unity & C#</p></div><button class="mt-2 w-full px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition text-sm">Join</button></div>
+    <div class="glass p-4 min-w-[220px] rounded-xl flex flex-col justify-between"><div><h3 class="font-semibold text-white">Design Challenge</h3><p class="text-sm text-slate-300 mt-1">Oct 5 • UI/UX Focus</p></div><button class="mt-2 w-full px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition text-sm">Join</button></div>
+  </div>
+</section>
+
+<footer class="mt-16 text-center text-slate-400 text-sm">
+  All the best! ❤️ • <span id="year"></span>
+</footer>
+
+<div id="createTeamModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
+  <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4 modal-content-responsive">
+    <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Create a New Team</h2><button id="closeModalBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div>
+    <form id="createTeamForm"><div class="mb-4"><label for="teamName" class="block text-sm font-medium text-slate-300 mb-2">Team Name</label><input type="text" id="teamName" name="teamName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required></div><div class="mb-4"><label for="description" class="block text-sm font-medium text-slate-300 mb-2">Description</label><input type="text" id="description" name="description" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="mb-6"><label for="skills" class="block text-sm font-medium text-slate-300 mb-2">Skills Needed (comma-separated)</label><input type="text" id="skills" name="skills" placeholder="e.g., React, Node.js, Figma" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="flex justify-end gap-4"><button type="button" id="cancelBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button><button type="submit" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button></div></form>
+  </div>
+</div>
+
+<div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
+  <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4 modal-content-responsive">
+    <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Edit Your Profile</h2><button id="closeEditModalBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div>
+    <form id="editProfileForm"><div class="mb-4"><label for="userNameInput" class="block text-sm font-medium text-slate-300 mb-2">Your Name</label><input type="text" id="userNameInput" name="userName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required></div><div class="mb-6"><label for="userSkillsInput" class="block text-sm font-medium text-slate-300 mb-2">Your Skills (comma-separated)</label><input type="text" id="userSkillsInput" name="userSkills" placeholder="e.g., React, Python, Figma" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="flex justify-end gap-4"><button type="button" id="cancelEditBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button><button type="submit" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Save Changes</button></div></form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- STATE MANAGEMENT ---
+    const defaultUser = { name: 'Adarsh G.', avatar: 'https://placehold.co/50x50/a78bfa/fff?text=AG', skills: ['React', 'Node.js', 'Python', 'JavaScript'], availability: 'Weekends', goals: ['Win a prize', 'Learn a new skill'] };
+    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || defaultUser;
+
+    const initialTeams = [{ id: 1, name: 'AI Hackathon Warriors', description: 'Building the future of AI.', skills: ['Python', 'TensorFlow'], members: 2, capacity: 4, status: 'Open', availability: 'Anytime', goals: ['Win a prize', 'Build a portfolio piece'] },{ id: 2, name: 'Web Dev Wizards', description: 'Crafting pixel-perfect web apps.', skills: ['React', 'Tailwind CSS'], members: 3, capacity: 4, status: 'Open', availability: 'Weekends', goals: ['Build a portfolio piece', 'Ship a product'] },{ id: 3, name: 'Game Changers', description: 'Creating the next big indie game.', skills: ['Unity', 'C#'], members: 4, capacity: 4, status: 'Full', availability: 'Evenings', goals: ['Have fun', 'Learn a new skill'] },{ id: 4, name: 'Data Dynamos', description: 'Finding insights in complex data.', skills: ['Python', 'SQL', 'JavaScript'], members: 1, capacity: 3, status: 'Open', availability: 'Weekends', goals: ['Win a prize', 'Learn a new skill'] }];
+    let teams = JSON.parse(localStorage.getItem('teams')) || initialTeams;
+    let appliedTeamIds = new Set(JSON.parse(localStorage.getItem('appliedTeamIds')) || []);
+
+    // --- DOM SELECTORS ---
+    const userProfileCard = document.getElementById('userProfileCard');
+    const teamGrid = document.getElementById('teamGrid');
+    const searchInput = document.getElementById('searchInput');
+    const skillFilter = document.getElementById('skillFilter');
+    const availabilityFilter = document.getElementById('availabilityFilter');
+    const resetFiltersBtn = document.getElementById('resetFilters');
+    const createTeamModal = document.getElementById('createTeamModal');
+    const editProfileModal = document.getElementById('editProfileModal');
+
+    // --- RENDER FUNCTIONS ---
+    const renderUserProfile = () => {
+        userProfileCard.innerHTML = `
+            <img src="${currentUser.avatar}" class="w-12 h-12 rounded-full" alt="User Avatar" />
+            <div>
+                <p class="font-semibold text-white">${currentUser.name}</p>
+                <div class="flex gap-2 mt-1 flex-wrap">${currentUser.skills.map(skill => `<span class="px-2 py-1 rounded-full bg-white/10 text-xs">${skill}</span>`).join('')}</div>
+            </div>
+            <button id="editProfileBtn" class="absolute top-3 right-3 text-slate-400 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+            </button>
+        `;
+        document.getElementById('editProfileBtn').addEventListener('click', openEditProfileModal);
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    const renderTeams = (sortedTeams) => {
+        teamGrid.innerHTML = '';
+        if (sortedTeams.length === 0) { teamGrid.innerHTML = `<p class="text-slate-400 col-span-full text-center">No teams found.</p>`; return; }
+        sortedTeams.forEach(({ team, score }) => {
+            const isApplied = appliedTeamIds.has(team.id);
+            let matchBadge = score > 10 ? `<p class="text-xs text-emerald-400 font-bold mb-2">🔥 Top Match (Score: ${score})</p>` : score > 5 ? `<p class="text-xs text-amber-400 font-bold mb-2">👍 Good Match (Score: ${score})</p>` : '';
+            const teamCardHTML = `<div class="glass p-4 team-card ${isApplied ? 'opacity-70' : ''}" data-team-id="${team.id}"><div><div class="flex justify-between items-start mb-2"><div><h3 class="font-semibold text-white text-lg">${team.name}</h3><p class="text-sm text-slate-300">${team.description}</p></div><span class="text-xs font-semibold ${team.status === 'Open' ? 'text-green-400' : 'text-red-400'}">${team.status}</span></div>${matchBadge}<p class="text-sm text-slate-400 font-medium mt-3">Looking for:</p><div class="flex gap-2 flex-wrap mt-1">${team.skills.map(skill => `<span class="px-2 py-1 rounded-full bg-sky-900/70 text-sky-300 text-xs">${skill}</span>`).join('')}</div><p class="text-sm text-slate-400 font-medium mt-3">Availability: <span class="font-normal text-slate-300">${team.availability}</span></p></div><div class="flex gap-2 mt-4"><button class="apply-btn flex-1 px-3 py-2 rounded-md ${isApplied ? 'bg-gray-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} text-white text-sm transition" ${isApplied ? 'disabled' : ''}>${isApplied ? 'Applied' : 'Apply'}</button></div></div>`;
+            teamGrid.insertAdjacentHTML('beforeend', teamCardHTML);
+        });
+    };
 
-    // DOM elements
-    const teamGrid = document.getElementById('teamGrid');
-    const searchInput = document.getElementById('search');
-    const filterSkill = document.getElementById('filterSkill');
-    const resetFilters = document.getElementById('resetFilters');
-    const modal = document.getElementById('modal');
-    const openCreate = document.getElementById('openCreate');
-    const closeModal = document.getElementById('closeModal');
-    const cancelCreate = document.getElementById('cancelCreate');
-    const createForm = document.getElementById('createForm');
-    const logoutBtn = document.getElementById('logoutBtn');
+    // --- CORE LOGIC ---
+    const calculateMatchScore = (team, user) => {
+        let score = 0;
+        score += team.skills.filter(skill => user.skills.includes(skill)).length * 3;
+        if (team.availability === 'Anytime' || team.availability === user.availability) { score += 5; }
+        score += team.goals.filter(goal => user.goals.includes(goal)).length * 2;
+        return score;
+    };
 
-    // Basic teams data (same as before)
-    const sampleTeams = [
-      { id: 't1', name: 'AI-powered Chatbot', desc: 'Chatbot for event portal.', skills: ['python','ml','web'], members: 3, status: 'open' },
-      { id: 't2', name: 'Mobile Game Dev', desc: 'Fun mobile game using Unity.', skills: ['unity','c#','backend'], members: 2, status: 'looking' },
-      { id: 't3', name: 'Hackathon Web Dev', desc: 'Weekend hackathon team.', skills: ['html','css','js'], members: 5, status: 'full' }
-    ];
+    const filterAndRender = () => {
+        currentUser.availability = availabilityFilter.value;
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedSkill = skillFilter.value;
+        const filteredTeams = teams.filter(team => team.status !== 'Full' && (team.name.toLowerCase().includes(searchTerm) || team.description.toLowerCase().includes(searchTerm)) && (selectedSkill ? team.skills.includes(selectedSkill) : true));
+        const scoredAndSortedTeams = filteredTeams.map(team => ({ team, score: calculateMatchScore(team, currentUser) })).sort((a, b) => b.score - a.score);
+        renderTeams(scoredAndSortedTeams);
+    };
 
-    const storageKey = 'qt_teams_v1';
-    function loadTeams() {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) { localStorage.setItem(storageKey, JSON.stringify(sampleTeams)); return sampleTeams.slice(); }
-      try { return JSON.parse(raw); } catch (e) { return sampleTeams.slice(); }
-    }
-    function saveTeams(list) { localStorage.setItem(storageKey, JSON.stringify(list)); }
+    // --- MODAL & EVENT HANDLERS ---
+    const openEditProfileModal = () => {
+        editProfileModal.querySelector('#userNameInput').value = currentUser.name;
+        editProfileModal.querySelector('#userSkillsInput').value = currentUser.skills.join(', ');
+        editProfileModal.classList.remove('hidden');
+    };
+    const closeEditProfileModal = () => editProfileModal.classList.add('hidden');
 
-    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    const handleProfileUpdate = (e) => {
+        e.preventDefault();
+        currentUser.name = editProfileModal.querySelector('#userNameInput').value;
+        currentUser.skills = editProfileModal.querySelector('#userSkillsInput').value.split(',').map(s => s.trim()).filter(Boolean);
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        renderUserProfile();
+        filterAndRender();
+        closeEditProfileModal();
+    };
 
-    function renderTeams(list) {
-      teamGrid.innerHTML = '';
-      if (!list.length) { teamGrid.innerHTML = '<div class="text-center text-slate-400 col-span-full">No teams found — create one!</div>'; return; }
-      list.forEach(t => {
-        const card = document.createElement('article');
-        card.className = 'p-4 rounded-xl glass';
-        card.innerHTML = `
-          <div class="flex justify-between items-start">
-            <div>
-              <h3 class="font-semibold text-white">${escapeHtml(t.name)}</h3>
-              <p class="mt-1 text-sm text-slate-300">${escapeHtml(t.desc)}</p>
-            </div>
-            <div class="text-right">
-              <span class="text-xs text-slate-300">${t.status}</span>
-              <div class="text-sm text-slate-300 mt-2">${t.members}/5</div>
-            </div>
-          </div>
-          <div class="mt-3 flex gap-2 flex-wrap">
-            ${t.skills.map(s => `<span class="px-3 py-1 rounded-full bg-white/8 text-xs">${escapeHtml(s)}</span>`).join('')}
-          </div>
-          <div class="mt-4 flex gap-2">
-            <button data-id="${t.id}" class="applyBtn flex-1 px-3 py-2 rounded-md bg-accent text-white">Apply</button>
-            <button data-id="${t.id}" class="previewBtn px-3 py-2 rounded-md border border-white/8">Preview</button>
-          </div>
-        `;
-        teamGrid.appendChild(card);
-      });
-    }
+    document.getElementById('createTeamBtnHeader').addEventListener('click', () => createTeamModal.classList.remove('hidden'));
+    document.getElementById('closeModalBtn').addEventListener('click', () => createTeamModal.classList.add('hidden'));
+    document.getElementById('cancelBtn').addEventListener('click', () => createTeamModal.classList.add('hidden'));
+    editProfileModal.querySelector('#editProfileForm').addEventListener('submit', handleProfileUpdate);
+    editProfileModal.querySelector('#closeEditModalBtn').addEventListener('click', closeEditProfileModal);
+    editProfileModal.querySelector('#cancelEditBtn').addEventListener('click', closeEditProfileModal);
 
-    // initialize
-    let teams = loadTeams();
-    renderTeams(teams);
-
-    // Search + filter
-    function applyFilters() {
-      const q = (searchInput.value || '').toLowerCase().trim();
-      const skill = filterSkill.value;
-      let filtered = teams.filter(t => {
-        if (skill && !t.skills.includes(skill)) return false;
-        if (!q) return true;
-        return t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.skills.join(' ').includes(q);
-      });
-      renderTeams(filtered);
-    }
-
-    searchInput.addEventListener('input', applyFilters);
-    filterSkill.addEventListener('change', applyFilters);
-    resetFilters.addEventListener('click', () => { searchInput.value=''; filterSkill.value=''; applyFilters(); });
-
-    // Modal logic
-    function showModal() { modal.classList.remove('hidden'); modal.querySelector('input, textarea').focus(); }
-    function hideModal() { modal.classList.add('hidden'); }
-
-    openCreate.addEventListener('click', showModal);
-    closeModal.addEventListener('click', hideModal);
-    cancelCreate.addEventListener('click', hideModal);
-
-    createForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const name = document.getElementById('teamName').value.trim();
-      const desc = document.getElementById('desc').value.trim();
-      const skills = (document.getElementById('skills').value || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-      if (!name) return alert('Team name is required');
-      const newTeam = { id: 't'+Date.now(), name, desc, skills, members: 1, status: 'open' };
-      teams.unshift(newTeam);
-      saveTeams(teams);
-      renderTeams(teams);
-      createForm.reset();
-      hideModal();
-    });
-
-    // delegated action listeners
-    document.addEventListener('click', (e) => {
-      const pid = e.target.getAttribute('data-id');
-      if (e.target.classList.contains('applyBtn')) {
-        const team = teams.find(t=>t.id===pid);
-        if (!team) return;
-        if (team.members >= 5) return alert('Team is full');
-        team.members += 1;
-        if (team.members >= 5) team.status='full';
-        saveTeams(teams);
-        applyFilters();
-        alert('Applied — owner will be notified (demo)');
-      }
-      if (e.target.classList.contains('previewBtn')) {
-        const team = teams.find(t=>t.id===pid);
-        if (!team) return;
-        alert(`${team.name}\n\n${team.desc}\n\nSkills: ${team.skills.join(', ')}`);
-      }
-    });
-
-    // UI niceties
+    availabilityFilter.addEventListener('change', filterAndRender);
+    searchInput.addEventListener('input', filterAndRender);
+    skillFilter.addEventListener('change', filterAndRender);
+    resetFiltersBtn.addEventListener('click', () => { searchInput.value = ''; skillFilter.value = ''; availabilityFilter.value = 'Weekends'; filterAndRender(); });
+    teamGrid.addEventListener('click', (e) => { if (e.target.classList.contains('apply-btn')) { const card = e.target.closest('.team-card'); const teamId = parseInt(card.dataset.teamId); if (!appliedTeamIds.has(teamId)) { appliedTeamIds.add(teamId); localStorage.setItem('appliedTeamIds', JSON.stringify(Array.from(appliedTeamIds))); filterAndRender(); } } });
+    
+    // --- INITIALIZATION ---
     document.getElementById('year').textContent = new Date().getFullYear();
-    document.getElementById('ctaCreate').addEventListener('click', showModal);
-    document.getElementById('ctaDiscover').addEventListener('click', () => { document.getElementById('teams').scrollIntoView({behavior:'smooth'}); });
+    renderUserProfile();
+    availabilityFilter.value = currentUser.availability;
+    filterAndRender();
+});
+</script>
 
-    // Dark toggle
-    const darkToggle = document.getElementById('darkToggle');
-    darkToggle.addEventListener('click', () => {
-      const pressed = darkToggle.getAttribute('aria-pressed') === 'true';
-      darkToggle.setAttribute('aria-pressed', String(!pressed));
-      document.documentElement.classList.toggle('dark');
-      if (document.documentElement.classList.contains('dark')) {
-        document.body.classList.remove('bg-gradient-to-br');
-        document.body.style.background = '#0f172a';
-      } else {
-        document.body.style.background = '';
-      }
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const communitySection = document.querySelector('.mt-10');
+        if (!communitySection) return;
+        let registeredEvents = JSON.parse(localStorage.getItem('registeredEvents')) || [];
+        const updateButtons = () => { communitySection.querySelectorAll('button').forEach((button, index) => { const eventId = `event-${index}`; if (registeredEvents.includes(eventId)) { button.textContent = 'Registered'; button.disabled = true; button.classList.add('bg-gray-700', 'cursor-not-allowed', 'hover:bg-gray-700'); } }); };
+        communitySection.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && !e.target.disabled) { const buttons = Array.from(communitySection.querySelectorAll('button')); const index = buttons.indexOf(e.target); const eventId = `event-${index}`; if (!registeredEvents.includes(eventId)) { registeredEvents.push(eventId); localStorage.setItem('registeredEvents', JSON.stringify(registeredEvents)); updateButtons(); } } });
+        updateButtons();
     });
+</script>
 
-    // small accessibility: close modal with escape
-    document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideModal(); });
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+  const firebaseConfig = { apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU", authDomain: "quick-teams-29685.firebaseapp.com", projectId: "quick-teams-29685", storageBucket: "quick-teams-29685.firebasestorage.app", messagingSenderId: "814121228704", appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5", measurementId: "G-Y1EY57N7BC" };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  document.getElementById('logoutBtn').addEventListener('click', () => { signOut(auth).then(() => { console.log('User signed out.'); window.location.href = 'index.html'; }).catch((error) => { console.error('Sign out error:', error); }); });
+</script>
 
-    // ---------- AUTH: show logout and protect page ----------
-    // If user is not authenticated, redirect to auth page (auth.html).
-    // If user is authenticated, reveal logout button.
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        // not signed in → send to auth page
-        window.location.href = 'auth.html';
-        return;
-      }
-      // signed in → show logout
-      logoutBtn.classList.remove('hidden');
-      // (optional) you can also show user.email somewhere if you want:
-      // console.log('Signed in as', user.email);
-    });
-
-    // Logout action
-    logoutBtn.addEventListener('click', async () => {
-      try {
-        await signOut(auth);
-        // after sign out, send back to auth page
-        window.location.href = 'auth.html';
-      } catch (err) {
-        console.error('Sign out error', err);
-        alert('Could not sign out. Check console for details.');
-      }
-    });
-  </script>
 </body>
 </html>
-
