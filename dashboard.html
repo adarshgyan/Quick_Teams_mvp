@@ -42,7 +42,7 @@
 
 <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
   <h1 class="text-3xl font-bold">Quick Teams</h1>
-  <div class="flex gap-4 items-center">
+        <div class="flex gap-4 items-center">
     <button id="createTeamBtnHeader" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button>
     <button id="logoutBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Log Out</button>
   </div>
@@ -113,7 +113,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
-    const defaultUser = { name: 'Adarsh G.', avatar: 'https://placehold.co/50x50/a78bfa/fff?text=AG', skills: ['React', 'Node.js', 'Python', 'JavaScript'], availability: 'Weekends', goals: ['Win a prize', 'Learn a new skill'] };
+    const defaultUser = { name: 'Guest User', avatar: 'https://placehold.co/50x50/a78bfa/fff?text=G', skills: [], availability: 'Weekends', goals: ['Build a portfolio piece', 'Learn new skills'] };
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || defaultUser;
 
     const initialTeams = [{ id: 1, name: 'AI Hackathon Warriors', description: 'Building the future of AI.', skills: ['Python', 'TensorFlow'], members: 2, capacity: 4, status: 'Open', availability: 'Anytime', goals: ['Win a prize', 'Build a portfolio piece'] },{ id: 2, name: 'Web Dev Wizards', description: 'Crafting pixel-perfect web apps.', skills: ['React', 'Tailwind CSS'], members: 3, capacity: 4, status: 'Open', availability: 'Weekends', goals: ['Build a portfolio piece', 'Ship a product'] },{ id: 3, name: 'Game Changers', description: 'Creating the next big indie game.', skills: ['Unity', 'C#'], members: 4, capacity: 4, status: 'Full', availability: 'Evenings', goals: ['Have fun', 'Learn a new skill'] },{ id: 4, name: 'Data Dynamos', description: 'Finding insights in complex data.', skills: ['Python', 'SQL', 'JavaScript'], members: 1, capacity: 3, status: 'Open', availability: 'Weekends', goals: ['Win a prize', 'Learn a new skill'] }];
@@ -163,11 +163,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- RENDER FUNCTIONS ---
     const renderUserProfile = () => {
+        const skillsHTML = currentUser.skills && currentUser.skills.length > 0 
+            ? currentUser.skills.map(skill => `<span class="px-2 py-1 rounded-full bg-white/10 text-xs">${skill}</span>`).join('')
+            : '<span class="px-2 py-1 rounded-full bg-slate-600/50 text-xs text-slate-400">No skills added yet</span>';
+            
         userProfileCard.innerHTML = `
             <img src="${currentUser.avatar}" class="w-12 h-12 rounded-full" alt="User Avatar" />
             <div>
                 <p class="font-semibold text-white">${currentUser.name}</p>
-                <div class="flex gap-2 mt-1 flex-wrap">${currentUser.skills.map(skill => `<span class="px-2 py-1 rounded-full bg-white/10 text-xs">${skill}</span>`).join('')}</div>
+                <div class="flex gap-2 mt-1 flex-wrap">${skillsHTML}</div>
             </div>
             <button id="editProfileBtn" class="absolute top-3 right-3 text-slate-400 hover:text-white transition">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
@@ -430,17 +434,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PROFILE MANAGEMENT FUNCTIONS ---
     const loadUserProfileFromFirebase = async (userId) => {
         try {
+            console.log('Attempting to load profile for user:', userId);
+            
             if (!window.firebaseDb || !window.firebaseGetDoc || !window.firebaseDoc) {
                 console.warn('Firebase not available for profile loading');
                 return null;
             }
 
             const userDocRef = window.firebaseDoc(window.firebaseDb, 'userProfiles', userId);
+            console.log('Document reference created:', userDocRef);
+            
             const userDoc = await window.firebaseGetDoc(userDocRef);
+            console.log('Document snapshot:', userDoc);
             
             if (userDoc.exists()) {
                 const profileData = userDoc.data();
                 console.log('Loaded user profile from Firebase:', profileData);
+                console.log('Profile name:', profileData.name, 'Skills:', profileData.skills);
                 return profileData;
             } else {
                 console.log('No profile found for user:', userId);
@@ -448,6 +458,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error loading user profile from Firebase:', error);
+            console.error('Error details:', {
+                message: error.message,
+                code: error.code,
+                stack: error.stack
+            });
             return null;
         }
     };
@@ -474,70 +489,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const initializeUserProfile = async () => {
-        try {
-            console.log('Starting profile initialization...');
-            
-            // Wait for Firebase to be ready
-            const firebaseReady = await waitForFirebase();
-            console.log('Firebase ready:', firebaseReady);
-            
-            // Check authentication state
-            const currentUserAuth = window.firebaseAuth?.currentUser;
-            console.log('Current user auth:', currentUserAuth);
-            
-            if (firebaseReady && currentUserAuth) {
-                const userId = currentUserAuth.uid;
-                console.log('Initializing profile for user:', userId);
-                
-                // Try to load profile from Firebase
-                const firebaseProfile = await loadUserProfileFromFirebase(userId);
-                console.log('Firebase profile loaded:', firebaseProfile);
-                
-                if (firebaseProfile) {
-                    // Use Firebase profile data
-                    currentUser = {
-                        ...defaultUser,
-                        ...firebaseProfile,
-                        // Keep local preferences that might not be in Firebase
-                        availability: firebaseProfile.availability || currentUser.availability,
-                        goals: firebaseProfile.goals || currentUser.goals
-                    };
-                    console.log('Using Firebase profile data:', currentUser);
-                } else {
-                    // No Firebase profile found, create a fresh profile for new user
-                    console.log('No Firebase profile found, creating fresh profile for new user');
-                    
-                    // Create a fresh profile with user's email as initial name
-                    const freshProfile = {
-                        name: window.firebaseAuth.currentUser.displayName || 
-                              window.firebaseAuth.currentUser.email?.split('@')[0] || 
-                              'New User',
-                        avatar: 'https://placehold.co/50x50/a78bfa/fff?text=' + 
-                                (window.firebaseAuth.currentUser.displayName?.charAt(0) || 
-                                 window.firebaseAuth.currentUser.email?.charAt(0) || 'U'),
-                        skills: [],
-                        availability: 'Weekends',
-                        goals: ['Build a portfolio piece', 'Learn new skills'],
-                        isNewUser: true
-                    };
-                    
-                    currentUser = freshProfile;
-                    await saveUserProfileToFirebase(userId, freshProfile);
-                    console.log('Created fresh profile for new user:', freshProfile);
-                }
-                
-                // Save to localStorage for offline access
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                console.log('Profile initialization completed');
-            } else {
-                console.log('Firebase not ready or user not authenticated, using local profile');
-                console.log('Firebase ready:', firebaseReady, 'User authenticated:', !!currentUserAuth);
-            }
-        } catch (error) {
-            console.error('Error initializing user profile:', error);
-        }
-    };
 
     // --- TEAM CREATION HANDLER ---
     const handleCreateTeam = async (e) => {
@@ -762,22 +713,42 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INITIALIZATION ---
     document.getElementById('year').textContent = new Date().getFullYear();
     
-    // Initialize user profile and teams, then render
+    // Initialize app - load profile and teams
     const initializeApp = async () => {
-        // First initialize user profile from Firebase
-        await initializeUserProfile();
+        // Wait for Firebase to be ready
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Then render the user profile
-    renderUserProfile();
-    availabilityFilter.value = currentUser.availability;
+        // Try to load profile if user is authenticated
+        if (window.firebaseAuth?.currentUser) {
+            console.log('User is authenticated on page load, loading profile...');
+            const userId = window.firebaseAuth.currentUser.uid;
+            const firebaseProfile = await loadUserProfileFromFirebase(userId);
+            
+            if (firebaseProfile && firebaseProfile.name && firebaseProfile.name !== 'New User') {
+                console.log('Loading profile from Firebase on page load:', firebaseProfile);
+                currentUser = {
+                    ...defaultUser,
+                    ...firebaseProfile,
+                    availability: firebaseProfile.availability || 'Weekends',
+                    goals: firebaseProfile.goals || ['Build a portfolio piece', 'Learn new skills']
+                };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        }
         
-        // Finally load teams from Firebase and render
+        // Render the user profile
+        renderUserProfile();
+        availabilityFilter.value = currentUser.availability;
+        
+        // Load teams from Firebase and render
         await loadTeamsFromFirebase();
-    filterAndRender();
+        filterAndRender();
     };
     
     // Start the initialization
     initializeApp();
+    
+    
 });
 </script>
 
@@ -818,62 +789,89 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle authentication state changes
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      console.log('User authenticated:', user.uid);
-      // User is signed in, load their profile
+      console.log('=== AUTH STATE CHANGED ===');
+      console.log('User authenticated:', user.uid, user.email);
+      
+      // Wait for Firebase to be fully ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       try {
+        console.log('Loading profile for authenticated user...');
         const firebaseProfile = await loadUserProfileFromFirebase(user.uid);
-        if (firebaseProfile) {
+        console.log('Firebase profile loaded:', firebaseProfile);
+        console.log('Profile name:', firebaseProfile?.name);
+        console.log('Profile skills:', firebaseProfile?.skills);
+        
+        if (firebaseProfile && firebaseProfile.name && firebaseProfile.name !== 'New User' && firebaseProfile.skills && firebaseProfile.skills.length > 0) {
+          console.log('Valid Firebase profile found, using it');
+          
           // Update current user with Firebase data
           currentUser = {
             ...defaultUser,
             ...firebaseProfile,
-            availability: firebaseProfile.availability || currentUser.availability,
-            goals: firebaseProfile.goals || currentUser.goals
+            availability: firebaseProfile.availability || 'Weekends',
+            goals: firebaseProfile.goals || ['Build a portfolio piece', 'Learn new skills']
           };
-          localStorage.setItem('currentUser', JSON.stringify(currentUser));
-          console.log('Profile loaded from Firebase on auth change:', currentUser);
           
-          // Update UI if elements exist
-          if (document.getElementById('userProfileCard')) {
-            renderUserProfile();
-            filterAndRender();
-          }
+          localStorage.setItem('currentUser', JSON.stringify(currentUser));
+          console.log('Profile loaded from Firebase:', currentUser);
+          
+          // Update UI
+          renderUserProfile();
+          filterAndRender();
+          
         } else {
-          console.log('No profile found for authenticated user, creating fresh profile');
+          console.log('No valid Firebase profile found, checking localStorage...');
           
-          // Create a fresh profile for new user
-          const freshProfile = {
-            name: user.displayName || 
-                  user.email?.split('@')[0] || 
-                  'New User',
-            avatar: 'https://placehold.co/50x50/a78bfa/fff?text=' + 
-                    (user.displayName?.charAt(0) || 
-                     user.email?.charAt(0) || 'U'),
-            skills: [],
-            availability: 'Weekends',
-            goals: ['Build a portfolio piece', 'Learn new skills'],
-            isNewUser: true
-          };
-          
-          currentUser = freshProfile;
-          await saveUserProfileToFirebase(user.uid, freshProfile);
-          localStorage.setItem('currentUser', JSON.stringify(currentUser));
-          
-          // Update UI if elements exist
-          if (document.getElementById('userProfileCard')) {
+          // Check localStorage for existing profile
+          const localProfile = JSON.parse(localStorage.getItem('currentUser'));
+          if (localProfile && localProfile.name && localProfile.name !== 'New User' && localProfile.skills && localProfile.skills.length > 0) {
+            console.log('Found valid local profile, using it');
+            currentUser = localProfile;
+            
+            // Save local profile to Firebase
+            await saveUserProfileToFirebase(user.uid, localProfile);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Update UI
+            renderUserProfile();
+            filterAndRender();
+          } else {
+            console.log('No valid profile found, creating fresh profile');
+            
+            // Create fresh profile
+            const freshProfile = {
+              name: user.displayName || user.email?.split('@')[0] || 'New User',
+              avatar: 'https://placehold.co/50x50/a78bfa/fff?text=' + (user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'),
+              skills: [],
+              availability: 'Weekends',
+              goals: ['Build a portfolio piece', 'Learn new skills'],
+              isNewUser: true
+            };
+            
+            currentUser = freshProfile;
+            await saveUserProfileToFirebase(user.uid, freshProfile);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Update UI
             renderUserProfile();
             filterAndRender();
           }
-          
-          console.log('Created fresh profile for new user on auth change:', freshProfile);
         }
       } catch (error) {
-        console.error('Error loading profile on auth change:', error);
+        console.error('Error in onAuthStateChanged:', error);
+        
+        // Fallback to localStorage
+        const localProfile = JSON.parse(localStorage.getItem('currentUser'));
+        if (localProfile && localProfile.name && localProfile.name !== 'New User') {
+          currentUser = localProfile;
+          console.log('Using local profile as fallback:', currentUser);
+          renderUserProfile();
+          filterAndRender();
+        }
       }
     } else {
       console.log('User signed out');
-      // Clear local profile data when user signs out
-      localStorage.removeItem('currentUser');
       currentUser = defaultUser;
     }
   });
@@ -882,15 +880,15 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       console.log('Starting logout process...');
       
-      // Clear local storage
+      // Sign out from Firebase first
+      await signOut(auth);
+      console.log('User signed out successfully.');
+      
+      // Only clear local storage after successful logout
       localStorage.removeItem('currentUser');
       localStorage.removeItem('teams');
       localStorage.removeItem('appliedTeamIds');
       localStorage.removeItem('registeredEvents');
-      
-      // Sign out from Firebase
-      await signOut(auth);
-      console.log('User signed out successfully.');
       
       // Redirect to login page
       window.location.href = 'index.html';
