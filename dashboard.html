@@ -42,7 +42,7 @@
 
 <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
   <h1 class="text-3xl font-bold">Quick Teams</h1>
-      <div class="flex gap-4 items-center">
+  <div class="flex gap-4 items-center">
     <button id="createTeamBtnHeader" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button>
     <button id="logoutBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Log Out</button>
   </div>
@@ -70,7 +70,8 @@
 
 <section>
   <div class="flex justify-between items-center mb-4">
-    <h2 class="text-2xl font-bold">Available Teams (Best Matches First)</h2>
+    <h2 class="text-2xl font-bold">Available Teams (Skill Match %)</h2>
+    <p class="text-sm text-slate-400">Teams ranked by skill compatibility with your profile</p>
   </div>
   <div id="search-filter-controls" class="mb-6">
       <div class="glass flex flex-col sm:flex-row gap-4 p-4">
@@ -180,32 +181,131 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sortedTeams.length === 0) { teamGrid.innerHTML = `<p class="text-slate-400 col-span-full text-center">No teams found.</p>`; return; }
         sortedTeams.forEach(({ team, score }) => {
             const isApplied = appliedTeamIds.has(team.firebaseId || team.id);
-            let matchBadge = score > 10 ? `<p class="text-xs text-emerald-400 font-bold mb-2">🔥 Top Match (Score: ${score})</p>` : score > 5 ? `<p class="text-xs text-amber-400 font-bold mb-2">👍 Good Match (Score: ${score})</p>` : '';
+            
+            // Create match percentage badge with color coding
+            let matchBadge = '';
+            let badgeColor = '';
+            
+            if (score >= 80) {
+                badgeColor = 'text-emerald-400 bg-emerald-900/30';
+            } else if (score >= 60) {
+                badgeColor = 'text-amber-400 bg-amber-900/30';
+            } else if (score >= 40) {
+                badgeColor = 'text-blue-400 bg-blue-900/30';
+            } else if (score >= 20) {
+                badgeColor = 'text-orange-400 bg-orange-900/30';
+            } else {
+                badgeColor = 'text-red-400 bg-red-900/30';
+            }
+            
+            matchBadge = `<div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold ${badgeColor} px-2 py-1 rounded-full">${score}% Match</span>
+                </div>
+                <div class="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full transition-all duration-500 ${score >= 80 ? 'bg-emerald-400' : score >= 60 ? 'bg-amber-400' : score >= 40 ? 'bg-blue-400' : score >= 20 ? 'bg-orange-400' : 'bg-red-400'}" style="width: ${score}%"></div>
+                </div>
+            </div>`;
+            
+            // Find matching skills between user and team
+            const matchingSkills = Array.isArray(team.skills) && Array.isArray(currentUser.skills) 
+                ? team.skills.filter(skill => 
+                    currentUser.skills.some(userSkill => 
+                        userSkill.toLowerCase().trim() === skill.toLowerCase().trim()
+                    )
+                ) : [];
+            
+            const nonMatchingSkills = Array.isArray(team.skills) 
+                ? team.skills.filter(skill => 
+                    !currentUser.skills.some(userSkill => 
+                        userSkill.toLowerCase().trim() === skill.toLowerCase().trim()
+                    )
+                ) : [];
+            
             const competitionInfo = team.competitionName ? `<p class="text-sm text-slate-400 font-medium mt-2">Competition: <span class="font-normal text-slate-300">${team.competitionName}</span></p>` : '';
             const teamSizeInfo = `<p class="text-sm text-slate-400 font-medium mt-2">Team Size: <span class="font-normal text-slate-300">${team.members}/${team.capacity || team.teamSize || 4}</span></p>`;
             
-            const teamCardHTML = `<div class="glass p-4 team-card ${isApplied ? 'opacity-70' : ''}" data-team-id="${team.firebaseId || team.id}"><div><div class="flex justify-between items-start mb-2"><div><h3 class="font-semibold text-white text-lg">${team.name}</h3><p class="text-sm text-slate-300">${team.description}</p></div><span class="text-xs font-semibold ${team.status === 'Open' ? 'text-green-400' : 'text-red-400'}">${team.status}</span></div>${matchBadge}${competitionInfo}${teamSizeInfo}<p class="text-sm text-slate-400 font-medium mt-3">Looking for:</p><div class="flex gap-2 flex-wrap mt-1">${team.skills.map(skill => `<span class="px-2 py-1 rounded-full bg-sky-900/70 text-sky-300 text-xs">${skill}</span>`).join('')}</div><p class="text-sm text-slate-400 font-medium mt-3">Availability: <span class="font-normal text-slate-300">${team.availability}</span></p></div><div class="flex gap-2 mt-4"><button class="apply-btn flex-1 px-3 py-2 rounded-md ${isApplied ? 'bg-gray-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} text-white text-sm transition" ${isApplied ? 'disabled' : ''}>${isApplied ? 'Applied' : 'Apply'}</button></div></div>`;
+            const skillsSection = matchingSkills.length > 0 || nonMatchingSkills.length > 0 
+                ? `<div class="mt-3">
+                    ${matchingSkills.length > 0 ? `
+                        <p class="text-sm text-slate-400 font-medium mb-1">Your matching skills:</p>
+                        <div class="flex gap-2 flex-wrap mb-2">${matchingSkills.map(skill => `<span class="px-2 py-1 rounded-full bg-emerald-900/70 text-emerald-300 text-xs">${skill}</span>`).join('')}</div>
+                    ` : ''}
+                    ${nonMatchingSkills.length > 0 ? `
+                        <p class="text-sm text-slate-400 font-medium mb-1">Skills they need:</p>
+                        <div class="flex gap-2 flex-wrap">${nonMatchingSkills.map(skill => `<span class="px-2 py-1 rounded-full bg-sky-900/70 text-sky-300 text-xs">${skill}</span>`).join('')}</div>
+                    ` : ''}
+                </div>` : '';
+            
+            const teamCardHTML = `<div class="glass p-4 team-card ${isApplied ? 'opacity-70' : ''}" data-team-id="${team.firebaseId || team.id}">
+                <div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-semibold text-white text-lg">${team.name}</h3>
+                            <p class="text-sm text-slate-300">${team.description}</p>
+                        </div>
+                        <span class="text-xs font-semibold ${team.status === 'Open' ? 'text-green-400' : 'text-red-400'}">${team.status}</span>
+                    </div>
+                    ${matchBadge}
+                    ${competitionInfo}
+                    ${teamSizeInfo}
+                    ${skillsSection}
+                    <p class="text-sm text-slate-400 font-medium mt-3">Availability: <span class="font-normal text-slate-300">${team.availability}</span></p>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button class="apply-btn flex-1 px-3 py-2 rounded-md ${isApplied ? 'bg-gray-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} text-white text-sm transition" ${isApplied ? 'disabled' : ''}>${isApplied ? 'Applied' : 'Apply'}</button>
+                </div>
+            </div>`;
             teamGrid.insertAdjacentHTML('beforeend', teamCardHTML);
         });
     };
 
     // --- CORE LOGIC ---
     const calculateMatchScore = (team, user) => {
-        let score = 0;
+        let totalScore = 0;
+        let maxPossibleScore = 0;
         
-        // Ensure skills arrays exist before filtering
-        if (Array.isArray(team.skills) && Array.isArray(user.skills)) {
-            score += team.skills.filter(skill => user.skills.includes(skill)).length * 3;
+        // Skills matching (primary factor - 70% weight)
+        if (Array.isArray(team.skills) && Array.isArray(user.skills) && team.skills.length > 0) {
+            const matchingSkills = team.skills.filter(skill => 
+                user.skills.some(userSkill => 
+                    userSkill.toLowerCase().trim() === skill.toLowerCase().trim()
+                )
+            ).length;
+            
+            const skillsScore = (matchingSkills / team.skills.length) * 70;
+            totalScore += skillsScore;
+            maxPossibleScore += 70;
+        } else {
+            maxPossibleScore += 70; // If no skills required, give full points
+            totalScore += 70;
         }
         
-        if (team.availability === 'Anytime' || team.availability === user.availability) { score += 5; }
+        // Availability matching (20% weight)
+        if (team.availability === 'Anytime' || team.availability === user.availability) {
+            totalScore += 20;
+        }
+        maxPossibleScore += 20;
         
-        // Ensure goals arrays exist before filtering
-        if (Array.isArray(team.goals) && Array.isArray(user.goals)) {
-            score += team.goals.filter(goal => user.goals.includes(goal)).length * 2;
+        // Goals matching (10% weight)
+        if (Array.isArray(team.goals) && Array.isArray(user.goals) && team.goals.length > 0) {
+            const matchingGoals = team.goals.filter(goal => 
+                user.goals.some(userGoal => 
+                    userGoal.toLowerCase().trim() === goal.toLowerCase().trim()
+                )
+            ).length;
+            
+            const goalsScore = (matchingGoals / team.goals.length) * 10;
+            totalScore += goalsScore;
+            maxPossibleScore += 10;
+        } else {
+            maxPossibleScore += 10; // If no goals specified, give full points
+            totalScore += 10;
         }
         
-        return score;
+        // Calculate percentage
+        const percentage = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+        return percentage;
     };
 
     const filterAndRender = () => {
@@ -267,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Updated currentUser:', currentUser);
             
             // Save to localStorage
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
             console.log('Saved to localStorage');
             
             // Save to Firebase if available
@@ -289,9 +389,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Update UI
-            renderUserProfile();
-            filterAndRender();
-            closeEditProfileModal();
+        renderUserProfile();
+        filterAndRender();
+        closeEditProfileModal();
             
             // Show success message
             alert('Profile updated successfully!');
@@ -658,7 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     };
-
+    
     // --- INITIALIZATION ---
     document.getElementById('year').textContent = new Date().getFullYear();
     
@@ -668,12 +768,12 @@ document.addEventListener('DOMContentLoaded', () => {
         await initializeUserProfile();
         
         // Then render the user profile
-        renderUserProfile();
-        availabilityFilter.value = currentUser.availability;
+    renderUserProfile();
+    availabilityFilter.value = currentUser.availability;
         
         // Finally load teams from Firebase and render
         await loadTeamsFromFirebase();
-        filterAndRender();
+    filterAndRender();
     };
     
     // Start the initialization
