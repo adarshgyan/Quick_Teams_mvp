@@ -212,15 +212,16 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
-    authDomain: "quick-teams-29685.firebaseapp.com",
-    projectId: "quick-teams-29685",
-    storageBucket: "quick-teams-29685.firebasestorage.app",
-    messagingSenderId: "814121228704",
-    appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
-    measurementId: "G-Y1EY57N7BC"
-  };
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
+  authDomain: "quick-teams-29685.firebaseapp.com",
+  projectId: "quick-teams-29685",
+  storageBucket: "quick-teams-29685.firebasestorage.app",
+  messagingSenderId: "814121228704",
+  appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
+  measurementId: "G-Y1EY57N7BC"
+};
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
