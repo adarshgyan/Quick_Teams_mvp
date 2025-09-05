@@ -1,84 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quick Teams — Login / Signup</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
-    body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at 20% 30%, rgba(56,189,248,0.12), transparent 60%), linear-gradient(135deg,#0f172a,#1e3a8a 40%); min-height:100vh; display:flex; align-items:center; justify-content:center; color:#f9d8c0; margin:0; padding:1rem; }
-    .auth-box { background: rgba(255,255,255,0.05); padding:2rem; border-radius:1rem; width:100%; max-width:420px; box-shadow:0 8px 30px rgba(0,0,0,0.5); text-align:center; }
-    .auth-input { width:100%; padding:.85rem 1rem; margin-bottom:1rem; border-radius:.75rem; border:1.5px solid #f9d8c0; background: rgba(255,255,255,0.03); color:inherit; }
-    .auth-btn { width:100%; padding:.9rem; border-radius:9999px; border:2px solid #f9d8c0; background:#a15d6a88; color:#f9d8c0; font-weight:600; cursor:pointer; }
-    .toggle-link { margin-top:1rem; cursor:pointer; color: #f9d8c0aa; text-decoration:underline; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Sign Up - Quick Teams</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #0f172a, #1e3a8a 40%, #4c1d95);
+      }
+    </style>
 </head>
-<body>
-  <div class="auth-box" id="auth-box">
-    <h2 id="form-title" style="font-family:'Dancing Script',cursive;font-size:2rem;margin-bottom:1rem;">Login</h2>
-    <input type="email" id="email" class="auth-input" placeholder="Email" />
-    <input type="password" id="password" class="auth-input" placeholder="Password" />
-    <button id="auth-btn" class="auth-btn">Login</button>
-    <p class="toggle-link" id="toggle-auth">Don't have an account? Signup</p>
-  </div>
+<body class="min-h-screen flex items-center justify-center text-white">
 
-  <script type="module">
+<div class="bg-slate-800/50 backdrop-blur-md p-8 rounded-2xl shadow-xl w-full max-w-md mx-4">
+  <h2 class="text-3xl font-bold text-center mb-1">Welcome to Quick Teams</h2>
+  <p class="text-slate-300 text-center mb-6">Find your teammates today.</p>
+
+  <form id="signupForm" class="mb-4">
+    <h3 class="text-xl font-semibold mb-3">Sign Up</h3>
+    <div class="mb-4">
+      <label for="signup-email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+      <input type="email" id="signup-email" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md focus:ring-2 focus:ring-purple-500" required>
+    </div>
+    <div class="mb-4">
+      <label for="signup-password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+      <input type="password" id="signup-password" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md" required minlength="6">
+    </div>
+    <button type="submit" class="w-full py-2 rounded-md bg-purple-600 hover:bg-purple-700 transition">Create Account</button>
+  </form>
+
+  <div class="my-6 flex items-center gap-4"><div class="h-px bg-slate-600 flex-grow"></div><span class="text-slate-400">OR</span><div class="h-px bg-slate-600 flex-grow"></div></div>
+
+  <form id="loginForm">
+    <h3 class="text-xl font-semibold mb-3">Log In</h3>
+    <div class="mb-4">
+      <label for="login-email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+      <input type="email" id="login-email" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md focus:ring-2 focus:ring-purple-500" required>
+    </div>
+    <div class="mb-4">
+      <label for="login-password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+      <input type="password" id="login-password" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md" required>
+    </div>
+    <button type="submit" class="w-full py-2 rounded-md bg-sky-600 hover:bg-sky-700 transition">Log In</button>
+  </form>
+  <p id="error-message" class="text-red-400 text-center mt-4"></p>
+</div>
+
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
 
+    // IMPORTANT: Paste your correct firebaseConfig object here!
     const firebaseConfig = {
-      apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
-      authDomain: "quick-teams-29685.firebaseapp.com",
-      projectId: "quick-teams-29685",
-      storageBucket: "quick-teams-29685.firebasestorage.app",
-      messagingSenderId: "814121228704",
-      appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
-      measurementId: "G-Y1EY57N7BC"
+        apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU",
+        authDomain: "quick-teams-29685.firebaseapp.com",
+        projectId: "quick-teams-29685",
+        storageBucket: "quick-teams-29685.firebasestorage.app",
+        messagingSenderId: "814121228704",
+        appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5",
+        measurementId: "G-Y1EY57N7BC"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const authBtn = document.getElementById('auth-btn');
-    const toggleLink = document.getElementById('toggle-auth');
-    const formTitle = document.getElementById('form-title');
+    const signupForm = document.getElementById('signupForm');
+    const loginForm = document.getElementById('loginForm');
+    const errorMessage = document.getElementById('error-message');
 
-    let isLogin = true;
-
-    toggleLink.addEventListener('click', () => {
-      isLogin = !isLogin;
-      formTitle.textContent = isLogin ? 'Login' : 'Signup';
-      authBtn.textContent = isLogin ? 'Login' : 'Signup';
-      toggleLink.textContent = isLogin ? "Don't have an account? Signup" : "Already have an account? Login";
-    });
-
-    authBtn.addEventListener('click', async () => {
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      if (!email || !password) return alert("Please fill all fields!");
-      try {
-        if (isLogin) {
-          await signInWithEmailAndPassword(auth, email, password);
-        } else {
-          await createUserWithEmailAndPassword(auth, email, password);
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            console.log('Signed up successfully!', userCredential.user);
+            window.location.href = 'dashboard.html';
+        } catch (error) {
+            errorMessage.textContent = error.message;
+            console.error('Sign up error:', error);
         }
-        // On success, firebase auth state change will redirect below — but redirect explicitly as well:
-        window.location.href = 'dashboard.html';
-      } catch (error) {
-        alert(error.message || 'Auth error');
-      }
     });
 
-    // If already signed in, send to dashboard immediately
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.location.href = 'dashboard.html';
-      }
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            console.log('Logged in successfully!', userCredential.user);
+            window.location.href = 'dashboard.html';
+        } catch (error) {
+            errorMessage.textContent = "Incorrect email or password. Please try again.";
+            console.error('Login error:', error);
+        }
     });
-  </script>
+</script>
+
 </body>
 </html>
