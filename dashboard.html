@@ -320,6 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>` : '';
 
+            // Check if current user is the team creator
+            const isTeamCreator = window.firebaseAuth?.currentUser?.uid === team.creatorId || 
+                                 window.firebaseAuth?.currentUser?.email === team.creatorEmail ||
+                                 currentUser.name === team.createdBy;
+            
+            const teamCreatorStatus = isTeamCreator ? '<p class="text-sm text-emerald-300 font-medium mb-3 text-center">✅ You are already in the team</p>' : '';
+            
             const teamCardHTML = `<div class="glass p-4 team-card ${isApplied ? 'opacity-70' : ''}" data-team-id="${team.firebaseId || team.id}">
                 <div>
                     <div class="flex justify-between items-start mb-2">
@@ -336,8 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${skillsSection}
                     <p class="text-sm text-slate-400 font-medium mt-3">Availability: <span class="font-normal text-slate-300">${team.availability}</span></p>
                 </div>
-                <div class="flex gap-2 mt-4">
-                    <button class="apply-btn flex-1 px-3 py-2 rounded-md ${isApplied ? 'bg-gray-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} text-white text-sm transition" ${isApplied ? 'disabled' : ''}>${isApplied ? 'Applied' : 'Apply'}</button>
+                <div class="flex flex-col gap-2 mt-4">
+                    ${teamCreatorStatus}
+                    <button class="apply-btn flex-1 px-3 py-2 rounded-md ${isApplied || isTeamCreator ? 'bg-gray-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} text-white text-sm transition" ${isApplied || isTeamCreator ? 'disabled' : ''}>${isApplied ? 'Applied' : isTeamCreator ? 'Your Team' : 'Apply'}</button>
                 </div>
             </div>`;
             teamGrid.insertAdjacentHTML('beforeend', teamCardHTML);
