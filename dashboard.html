@@ -42,15 +42,21 @@
 
 <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
   <h1 class="text-3xl font-bold">Quick Teams</h1>
-        <div class="flex gap-4 items-center">
+  <div class="flex gap-4 items-center">
     <button id="createTeamBtnHeader" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button>
+    <button id="notificationsBtn" class="relative px-4 py-2 rounded-md border border-blue-500 text-blue-300 hover:bg-blue-700 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+      </svg>
+      <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+    </button>
     <button id="logoutBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Log Out</button>
   </div>
 </header>
 
 <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
   <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/handshake.png" class="mb-3" alt="Matchmaking Icon"/><h3 class="font-semibold text-white mb-1">Matchmaking</h3><p class="text-sm text-slate-300">Find teammates who fit your skills and goals.</p></div>
-  <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/skills.png" class="mb-3" alt="Skills Icon" /><h3 class="font-semibold text-white mb-1">Show Your Skills</h3><p class="text-sm text-slate-300">Highlight your strengths and discover others.</p></div>
+  <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://cdn-icons-png.flaticon.com/512/15757/15757041.png" class="mb-3 h-10" alt="Skills Icon" /><h3 class="font-semibold text-white mb-1">Show Your Skills</h3><p class="text-sm text-slate-300">Highlight your strengths and discover others.</p></div>
   <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/clock.png" class="mb-3" alt="Clock Icon"/><h3 class="font-semibold text-white mb-1">Match on Time</h3><p class="text-sm text-slate-300">Team up with people who are actually available.</p></div>
   <div class="glass text-center p-6 flex flex-col items-center justify-center"><img src="https://img.icons8.com/color/48/000000/group.png" class="mb-3" alt="Community Icon"/><h3 class="font-semibold text-white mb-1">Community Connect</h3><p class="text-sm text-slate-300">Join events, clubs, or games easily.</p></div>
 </section>
@@ -107,6 +113,22 @@
   <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4 modal-content-responsive">
     <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Edit Your Profile</h2><button id="closeEditModalBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div>
     <form id="editProfileForm"><div class="mb-4"><label for="userNameInput" class="block text-sm font-medium text-slate-300 mb-2">Your Name</label><input type="text" id="userNameInput" name="userName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required></div><div class="mb-6"><label for="userSkillsInput" class="block text-sm font-medium text-slate-300 mb-2">Your Skills (comma-separated)</label><input type="text" id="userSkillsInput" name="userSkills" placeholder="e.g., React, Python, Figma" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="flex justify-end gap-4"><button type="button" id="cancelEditBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button><button type="submit" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Save Changes</button></div></form>
+  </div>
+</div>
+
+<div id="notificationsModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
+  <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-2xl mx-4 modal-content-responsive">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-white">Notifications</h2>
+      <button id="closeNotificationsBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+    </div>
+    <div id="notificationsList" class="space-y-4 max-h-96 overflow-y-auto">
+      <!-- Notifications will be loaded here -->
+    </div>
+    <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-600">
+      <p class="text-sm text-slate-400">Click Accept/Reject to respond to applications</p>
+      <button id="markAllReadBtn" class="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition">Mark All as Read</button>
+    </div>
   </div>
 </div>
 
@@ -241,6 +263,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     ` : ''}
                 </div>` : '';
             
+            // Team members section
+            const teamMembersSection = team.teamMembers && team.teamMembers.length > 0 
+                ? `<div class="mt-3">
+                    <p class="text-sm text-slate-400 font-medium mb-2">Team Members:</p>
+                    <div class="space-y-1">
+                        ${team.teamMembers.map(member => `
+                            <div class="flex items-center justify-between p-2 bg-slate-700/30 rounded-lg">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <span class="text-xs text-white font-medium">${member.name.charAt(0).toUpperCase()}</span>
+                                    </div>
+                                    <span class="text-white text-sm">${member.name}</span>
+                                </div>
+                                <span class="text-slate-400 text-xs">${member.email}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>` : '';
+
             const teamCardHTML = `<div class="glass p-4 team-card ${isApplied ? 'opacity-70' : ''}" data-team-id="${team.firebaseId || team.id}">
                 <div>
                     <div class="flex justify-between items-start mb-2">
@@ -253,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${matchBadge}
                     ${competitionInfo}
                     ${teamSizeInfo}
+                    ${teamMembersSection}
                     ${skillsSection}
                     <p class="text-sm text-slate-400 font-medium mt-3">Availability: <span class="font-normal text-slate-300">${team.availability}</span></p>
                 </div>
@@ -489,6 +531,224 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- NOTIFICATION SYSTEM ---
+    const sendNotification = async (recipientId, type, data) => {
+        try {
+            if (!window.firebaseDb || !window.firebaseAddDoc || !window.firebaseCollection) {
+                console.warn('Firebase not available for notifications');
+                return false;
+            }
+
+            const notification = {
+                recipientId: recipientId,
+                type: type, // 'team_application', 'application_accepted', 'application_rejected'
+                data: data,
+                isRead: false,
+                createdAt: new Date().toISOString()
+            };
+
+            await window.firebaseAddDoc(window.firebaseCollection(window.firebaseDb, 'notifications'), notification);
+            console.log('Notification sent successfully');
+            return true;
+        } catch (error) {
+            console.error('Error sending notification:', error);
+            return false;
+        }
+    };
+
+    const loadNotifications = async () => {
+        try {
+            if (!window.firebaseAuth?.currentUser || !window.firebaseDb || !window.firebaseGetDocs || !window.firebaseCollection) {
+                return [];
+            }
+
+            const userId = window.firebaseAuth.currentUser.uid;
+            const notificationsQuery = window.firebaseQuery(
+                window.firebaseCollection(window.firebaseDb, 'notifications'),
+                window.firebaseOrderBy('createdAt', 'desc')
+            );
+            
+            const querySnapshot = await window.firebaseGetDocs(notificationsQuery);
+            const notifications = [];
+            
+            querySnapshot.forEach((doc) => {
+                const notification = doc.data();
+                if (notification.recipientId === userId) {
+                    notifications.push({
+                        id: doc.id,
+                        ...notification
+                    });
+                }
+            });
+
+            return notifications;
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            return [];
+        }
+    };
+
+    const markNotificationAsRead = async (notificationId) => {
+        try {
+            if (!window.firebaseDb || !window.firebaseUpdateDoc || !window.firebaseDoc) {
+                return false;
+            }
+
+            const notificationRef = window.firebaseDoc(window.firebaseDb, 'notifications', notificationId);
+            await window.firebaseUpdateDoc(notificationRef, { isRead: true });
+            return true;
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            return false;
+        }
+    };
+
+    const renderNotifications = (notifications) => {
+        const notificationsList = document.getElementById('notificationsList');
+        if (!notificationsList) return;
+
+        if (notifications.length === 0) {
+            notificationsList.innerHTML = '<p class="text-slate-400 text-center py-8">No notifications yet</p>';
+            return;
+        }
+
+        notificationsList.innerHTML = notifications.map(notification => {
+            const isRead = notification.isRead;
+            const timeAgo = new Date(notification.createdAt).toLocaleString();
+            
+            let content = '';
+            let actionButtons = '';
+            
+            switch (notification.type) {
+                case 'team_application':
+                    content = `
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-white font-medium">New Team Application</p>
+                                <p class="text-slate-300 text-sm">${notification.data.applicantName} wants to join "${notification.data.teamName}"</p>
+                                ${notification.data.applicantSkills && notification.data.applicantSkills.length > 0 ? `
+                                    <div class="mt-2">
+                                        <p class="text-xs text-slate-400 mb-1">Skills:</p>
+                                        <div class="flex gap-1 flex-wrap">
+                                            ${notification.data.applicantSkills.map(skill => `<span class="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs rounded">${skill}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    actionButtons = `
+                        <div class="flex gap-2 mt-3">
+                            <button class="accept-application-btn px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors flex items-center gap-1" data-notification-id="${notification.id}" data-applicant-email="${notification.data.applicantEmail}" data-team-name="${notification.data.teamName}" data-team-id="${notification.data.teamId}">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                Accept
+                            </button>
+                            <button class="reject-application-btn px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center gap-1" data-notification-id="${notification.id}" data-applicant-email="${notification.data.applicantEmail}" data-team-name="${notification.data.teamName}">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                Reject
+                            </button>
+                        </div>
+                    `;
+                    break;
+                case 'application_accepted':
+                    content = `
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-white font-medium">Application Accepted! 🎉</p>
+                                <p class="text-slate-300 text-sm">You've been accepted to join "${notification.data.teamName}"</p>
+                            </div>
+                        </div>
+                    `;
+                    actionButtons = `
+                        <div class="mt-3 p-3 bg-blue-900/30 rounded-lg">
+                            <p class="text-sm text-blue-300 font-medium">📧 Contact Team Creator:</p>
+                            <p class="text-white text-sm">${notification.data.creatorEmail}</p>
+                        </div>
+                    `;
+                    break;
+                case 'application_rejected':
+                    content = `
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-white font-medium">Application Rejected</p>
+                                <p class="text-slate-300 text-sm">Your application to join "${notification.data.teamName}" was not accepted</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                default:
+                    content = `<p class="text-white">${notification.data.message || 'New notification'}</p>`;
+            }
+
+            return `
+                <div class="glass p-4 ${isRead ? 'opacity-70' : ''}" data-notification-id="${notification.id}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            ${content}
+                            <p class="text-xs text-slate-400 mt-1">${timeAgo}</p>
+                            ${actionButtons}
+                        </div>
+                        ${!isRead ? '<div class="w-2 h-2 bg-blue-500 rounded-full ml-2"></div>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const updateNotificationBadge = (notifications) => {
+        const badge = document.getElementById('notificationBadge');
+        if (!badge) return;
+
+        const unreadCount = notifications.filter(n => !n.isRead).length;
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    };
+
+    const findUserByEmail = async (email) => {
+        try {
+            if (!window.firebaseDb || !window.firebaseGetDocs || !window.firebaseCollection) {
+                return null;
+            }
+
+            const usersQuery = window.firebaseQuery(window.firebaseCollection(window.firebaseDb, 'userProfiles'));
+            const querySnapshot = await window.firebaseGetDocs(usersQuery);
+            
+            for (const doc of querySnapshot.docs) {
+                const userData = doc.data();
+                if (userData.email === email) {
+                    return { uid: doc.id, ...userData };
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Error finding user by email:', error);
+            return null;
+        }
+    };
+
 
     // --- TEAM CREATION HANDLER ---
     const handleCreateTeam = async (e) => {
@@ -547,6 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
             availability: currentUser.availability || 'Weekends',
             goals: currentUser.goals || ['Build a portfolio piece'],
             createdBy: currentUser.name || 'Anonymous',
+            teamMembers: [], // Initialize empty team members array
             createdAt: new Date().toISOString(),
             creatorId: window.firebaseAuth?.currentUser?.uid || 'anonymous',
             creatorEmail: window.firebaseAuth?.currentUser?.email || 'unknown',
@@ -652,12 +913,173 @@ document.addEventListener('DOMContentLoaded', () => {
     editProfileModal.querySelector('#editProfileForm').addEventListener('submit', handleProfileUpdate);
     editProfileModal.querySelector('#closeEditModalBtn').addEventListener('click', closeEditProfileModal);
     editProfileModal.querySelector('#cancelEditBtn').addEventListener('click', closeEditProfileModal);
+    
+    // Notification modal event listeners
+    document.getElementById('notificationsBtn').addEventListener('click', async () => {
+        const notificationsModal = document.getElementById('notificationsModal');
+        notificationsModal.classList.remove('hidden');
+        
+        // Load and display notifications
+        const notifications = await loadNotifications();
+        renderNotifications(notifications);
+        updateNotificationBadge(notifications);
+    });
+    
+    document.getElementById('closeNotificationsBtn').addEventListener('click', () => {
+        document.getElementById('notificationsModal').classList.add('hidden');
+    });
+    
+    document.getElementById('markAllReadBtn').addEventListener('click', async () => {
+        const notifications = await loadNotifications();
+        const unreadNotifications = notifications.filter(n => !n.isRead);
+        
+        for (const notification of unreadNotifications) {
+            await markNotificationAsRead(notification.id);
+        }
+        
+        // Refresh notifications display
+        const updatedNotifications = await loadNotifications();
+        renderNotifications(updatedNotifications);
+        updateNotificationBadge(updatedNotifications);
+    });
+    
+    // Handle notification actions
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('accept-application-btn')) {
+            const notificationId = e.target.dataset.notificationId;
+            const applicantEmail = e.target.dataset.applicantEmail;
+            const teamName = e.target.dataset.teamName;
+            const teamId = e.target.dataset.teamId;
+            
+            // Mark notification as read
+            await markNotificationAsRead(notificationId);
+            
+            // Update team member count and add member info
+            const team = teams.find(t => (t.firebaseId || t.id) === teamId);
+            if (team) {
+                team.members = (team.members || 1) + 1;
+                
+                // Initialize teamMembers array if it doesn't exist
+                if (!team.teamMembers) {
+                    team.teamMembers = [];
+                }
+                
+                // Add the new member to the team
+                const newMember = {
+                    name: notification.data.applicantName || 'Unknown',
+                    email: applicantEmail,
+                    joinedAt: new Date().toISOString()
+                };
+                team.teamMembers.push(newMember);
+                
+                // Update team status if full
+                if (team.members >= team.capacity) {
+                    team.status = 'Full';
+                }
+                
+                // Update in Firebase
+                if (team.firebaseId && window.firebaseDb && window.firebaseUpdateDoc && window.firebaseDoc) {
+                    const teamRef = window.firebaseDoc(window.firebaseDb, 'teams', team.firebaseId);
+                    await window.firebaseUpdateDoc(teamRef, {
+                        members: team.members,
+                        status: team.status,
+                        teamMembers: team.teamMembers,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+                
+                // Update local storage
+                localStorage.setItem('teams', JSON.stringify(teams));
+                
+                // Refresh team display
+                filterAndRender();
+            }
+            
+            // Send acceptance notification to applicant
+            const applicant = await findUserByEmail(applicantEmail);
+            if (applicant) {
+                await sendNotification(applicant.uid, 'application_accepted', {
+                    teamName: teamName,
+                    creatorEmail: window.firebaseAuth.currentUser.email,
+                    teamId: teamId
+                });
+            }
+            
+            // Show success message with email exchange
+            alert(`✅ Application accepted! Team now has ${team.members}/${team.capacity} members.\n\nYou can contact the applicant at: ${applicantEmail}`);
+            
+            // Refresh notifications
+            const notifications = await loadNotifications();
+            renderNotifications(notifications);
+            updateNotificationBadge(notifications);
+        }
+        
+        if (e.target.classList.contains('reject-application-btn')) {
+            const notificationId = e.target.dataset.notificationId;
+            const applicantEmail = e.target.dataset.applicantEmail;
+            const teamName = e.target.dataset.teamName;
+            
+            // Mark notification as read
+            await markNotificationAsRead(notificationId);
+            
+            // Send rejection notification to applicant
+            const applicant = await findUserByEmail(applicantEmail);
+            if (applicant) {
+                await sendNotification(applicant.uid, 'application_rejected', {
+                    teamName: teamName,
+                    creatorEmail: window.firebaseAuth.currentUser.email
+                });
+            }
+            
+            // Show rejection message
+            alert(`❌ Application rejected for team "${teamName}". The applicant has been notified.`);
+            
+            // Refresh notifications
+            const notifications = await loadNotifications();
+            renderNotifications(notifications);
+            updateNotificationBadge(notifications);
+        }
+    });
 
     availabilityFilter.addEventListener('change', filterAndRender);
     searchInput.addEventListener('input', filterAndRender);
     skillFilter.addEventListener('change', filterAndRender);
     resetFiltersBtn.addEventListener('click', () => { searchInput.value = ''; skillFilter.value = ''; availabilityFilter.value = 'Weekends'; filterAndRender(); });
-    teamGrid.addEventListener('click', (e) => { if (e.target.classList.contains('apply-btn')) { const card = e.target.closest('.team-card'); const teamId = card.dataset.teamId; if (!appliedTeamIds.has(teamId)) { appliedTeamIds.add(teamId); localStorage.setItem('appliedTeamIds', JSON.stringify(Array.from(appliedTeamIds))); filterAndRender(); } } });
+    teamGrid.addEventListener('click', async (e) => { 
+        if (e.target.classList.contains('apply-btn')) { 
+            const card = e.target.closest('.team-card'); 
+            const teamId = card.dataset.teamId; 
+            if (!appliedTeamIds.has(teamId)) { 
+                // Find the team data
+                const team = teams.find(t => (t.firebaseId || t.id) === teamId);
+                if (team && window.firebaseAuth?.currentUser) {
+                    // Check if team is full
+                    if (team.status === 'Full' || team.members >= team.capacity) {
+                        alert('This team is already full!');
+                        return;
+                    }
+                    // Send notification to team creator
+                    const notificationData = {
+                        applicantName: currentUser.name,
+                        applicantEmail: window.firebaseAuth.currentUser.email,
+                        teamName: team.name,
+                        teamId: teamId,
+                        applicantSkills: currentUser.skills || []
+                    };
+                    
+                    // Send notification to team creator
+                    await sendNotification(team.creatorId, 'team_application', notificationData);
+                    
+                    // Add to applied teams
+                    appliedTeamIds.add(teamId);
+                    localStorage.setItem('appliedTeamIds', JSON.stringify(Array.from(appliedTeamIds)));
+                    filterAndRender();
+                    
+                    alert('Application sent! The team creator will be notified.');
+                }
+            } 
+        } 
+    });
     
     // --- LOAD TEAMS FROM FIREBASE ---
     const loadTeamsFromFirebase = async () => {
@@ -737,12 +1159,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Render the user profile
-        renderUserProfile();
-        availabilityFilter.value = currentUser.availability;
+    renderUserProfile();
+    availabilityFilter.value = currentUser.availability;
         
         // Load teams from Firebase and render
         await loadTeamsFromFirebase();
         filterAndRender();
+        
+        // Load notifications and update badge
+        if (window.firebaseAuth?.currentUser) {
+            const notifications = await loadNotifications();
+            updateNotificationBadge(notifications);
+            
+            // Set up periodic notification refresh (every 30 seconds)
+            setInterval(async () => {
+                if (window.firebaseAuth?.currentUser) {
+                    const notifications = await loadNotifications();
+                    updateNotificationBadge(notifications);
+                }
+            }, 30000);
+        }
     };
     
     // Start the initialization
