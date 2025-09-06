@@ -74,6 +74,25 @@
   </div>
 </section>
 
+<!-- Smart Matchmaking Section -->
+<section class="mb-12">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-white">Smart Matchmaking</h2>
+      <p class="text-slate-400 mt-1">Find teammates who match your skills and goals</p>
+    </div>
+    <button id="refreshMatchmakingBtn" class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      Refresh
+    </button>
+  </div>
+  <div id="matchmakingGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Potential teammates will be loaded here -->
+  </div>
+</section>
+
 <section>
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-2xl font-bold">Available Teams (Skill Match %)</h2>
@@ -132,13 +151,34 @@
   </div>
 </div>
 
+<!-- Contact Details Modal -->
+<div id="contactModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
+  <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-white">Contact Details</h2>
+      <button id="closeContactBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+    </div>
+    <div id="contactDetails" class="space-y-4">
+      <!-- Contact details will be loaded here -->
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button id="copyEmailBtn" class="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+        Copy Email
+      </button>
+      <button id="sendMessageBtn" class="flex-1 py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+        Send Message
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     const defaultUser = { name: 'Guest User', avatar: 'https://placehold.co/50x50/a78bfa/fff?text=G', skills: [], availability: 'Weekends', goals: ['Build a portfolio piece', 'Learn new skills'] };
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || defaultUser;
 
-    const initialTeams = [];
+    const initialTeams = [{ id: 1, name: 'AI Hackathon Warriors', description: 'Building the future of AI.', skills: ['Python', 'TensorFlow'], members: 2, capacity: 4, status: 'Open', availability: 'Anytime', goals: ['Win a prize', 'Build a portfolio piece'] },{ id: 2, name: 'Web Dev Wizards', description: 'Crafting pixel-perfect web apps.', skills: ['React', 'Tailwind CSS'], members: 3, capacity: 4, status: 'Open', availability: 'Weekends', goals: ['Build a portfolio piece', 'Ship a product'] },{ id: 3, name: 'Game Changers', description: 'Creating the next big indie game.', skills: ['Unity', 'C#'], members: 4, capacity: 4, status: 'Full', availability: 'Evenings', goals: ['Have fun', 'Learn a new skill'] },{ id: 4, name: 'Data Dynamos', description: 'Finding insights in complex data.', skills: ['Python', 'SQL', 'JavaScript'], members: 1, capacity: 3, status: 'Open', availability: 'Weekends', goals: ['Win a prize', 'Learn a new skill'] }];
     
     // Safely initialize teams array
     let teams;
@@ -146,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const storedTeams = localStorage.getItem('teams');
         teams = storedTeams ? JSON.parse(storedTeams) : initialTeams;
         if (!Array.isArray(teams)) {
-            console.warn('Teams data is not an array, resetting to empty array');
+            console.warn('Teams data is not an array, resetting to initial teams');
             teams = initialTeams;
             localStorage.setItem('teams', JSON.stringify(teams));
         } else {
@@ -159,8 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
                        Array.isArray(team.skills);
             });
             
-            // Save validated teams back to localStorage
-            localStorage.setItem('teams', JSON.stringify(teams));
+            // If no valid teams remain, use initial teams
+            if (teams.length === 0) {
+                console.warn('No valid teams found, resetting to initial teams');
+                teams = initialTeams;
+                localStorage.setItem('teams', JSON.stringify(teams));
+            }
         }
     } catch (error) {
         console.error('Error parsing teams from localStorage:', error);
@@ -200,22 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderTeams = (sortedTeams) => {
         teamGrid.innerHTML = '';
-        if (sortedTeams.length === 0) { 
-            teamGrid.innerHTML = `
-                <div class="col-span-full text-center py-12">
-                    <div class="glass p-8 rounded-lg max-w-md mx-auto">
-                        <div class="text-6xl mb-4">🚀</div>
-                        <h3 class="text-xl font-semibold text-white mb-2">No teams available yet</h3>
-                        <p class="text-slate-400 mb-4">Be the first to create a team and start collaborating!</p>
-                        <button onclick="document.getElementById('createTeamModal').classList.remove('hidden')" 
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition">
-                            Create Your Team
-                        </button>
-                    </div>
-                </div>
-            `; 
-            return; 
-        }
+        if (sortedTeams.length === 0) { teamGrid.innerHTML = `<p class="text-slate-400 col-span-full text-center">No teams found.</p>`; return; }
         sortedTeams.forEach(({ team, score }) => {
             const isApplied = appliedTeamIds.has(team.firebaseId || team.id);
             
@@ -260,17 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ) : [];
             
             const competitionInfo = team.competitionName ? `<p class="text-sm text-slate-400 font-medium mt-2">Competition: <span class="font-normal text-slate-300">${team.competitionName}</span></p>` : '';
-            // Calculate accurate member count including creator
-            let actualMemberCount = 1; // At minimum, creator is always a member
-            
-            if (team.teamMembers && team.teamMembers.length > 0) {
-                actualMemberCount = team.teamMembers.length;
-            } else if (team.members && team.members > 0) {
-                actualMemberCount = team.members;
-            }
-            
-            const teamCapacity = team.capacity || team.teamSize || 4;
-            const teamSizeInfo = `<p class="text-sm text-slate-400 font-medium mt-2">Team Size: <span class="font-normal text-slate-300">${actualMemberCount}/${teamCapacity}</span></p>`;
+            const teamSizeInfo = `<p class="text-sm text-slate-400 font-medium mt-2">Team Size: <span class="font-normal text-slate-300">${team.teamMembers ? team.teamMembers.length : team.members || 1}/${team.capacity || team.teamSize || 4}</span></p>`;
             
             const skillsSection = matchingSkills.length > 0 || nonMatchingSkills.length > 0 
                 ? `<div class="mt-3">
@@ -284,74 +303,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     ` : ''}
                 </div>` : '';
             
-            // Team members section - ensure creator is always included
-            let teamMembers = team.teamMembers || [];
-            
-            // If no teamMembers array or it's empty, create one with the creator
-            if (!team.teamMembers || team.teamMembers.length === 0) {
-                teamMembers = [{
-                    name: team.createdBy || 'Team Creator',
-                    email: team.creatorEmail || 'unknown',
-                    joinedAt: team.createdAt || new Date().toISOString(),
-                    role: 'creator',
-                    isCreator: true
-                }];
-            }
-            
-            // Ensure creator is always in the teamMembers array
-            const hasCreator = teamMembers.some(member => 
-                member.email === team.creatorEmail || 
-                member.isCreator || 
-                member.role === 'creator'
-            );
-            
-            if (!hasCreator) {
-                teamMembers.unshift({
-                    name: team.createdBy || 'Team Creator',
-                    email: team.creatorEmail || 'unknown',
-                    joinedAt: team.createdAt || new Date().toISOString(),
-                    role: 'creator',
-                    isCreator: true
-                });
-            }
-            
-            // Remove duplicates and sort (creator first)
-            const uniqueMembers = teamMembers.filter((member, index, self) => 
-                index === self.findIndex(m => m.email === member.email)
-            ).sort((a, b) => {
-                // Creator first, then by join date
-                if (a.isCreator || a.role === 'creator') return -1;
-                if (b.isCreator || b.role === 'creator') return 1;
-                return new Date(a.joinedAt) - new Date(b.joinedAt);
-            });
-            
-            const teamMembersSection = `<div class="mt-3">
-                <p class="text-sm text-slate-400 font-medium mb-2">Team Members (${uniqueMembers.length}/${team.capacity}):</p>
-                <div class="space-y-1 max-h-32 overflow-y-auto">
-                    ${uniqueMembers.map(member => {
-                        const isCreator = member.isCreator || member.role === 'creator';
-                        const avatarColor = isCreator ? 'bg-purple-500' : 'bg-blue-500';
-                        const roleBadge = isCreator ? 
-                            '<span class="px-1.5 py-0.5 bg-purple-600 text-white text-xs rounded-full">Creator</span>' : 
-                            '<span class="px-1.5 py-0.5 bg-slate-600 text-slate-300 text-xs rounded-full">Member</span>';
-                        
-                        return `
+            // Team members section
+            const teamMembersSection = team.teamMembers && team.teamMembers.length > 0 
+                ? `<div class="mt-3">
+                    <p class="text-sm text-slate-400 font-medium mb-2">Team Members (${team.members || team.teamMembers.length}/${team.capacity}):</p>
+                    <div class="space-y-1">
+                        ${team.teamMembers.map(member => `
                             <div class="flex items-center justify-between p-2 bg-slate-700/30 rounded-lg">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-6 h-6 ${avatarColor} rounded-full flex items-center justify-center">
+                                    <div class="w-6 h-6 ${member.isCreator ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-blue-500'} rounded-full flex items-center justify-center">
                                         <span class="text-xs text-white font-medium">${member.name.charAt(0).toUpperCase()}</span>
                                     </div>
-                                    <div class="flex flex-col">
-                                        <span class="text-white text-sm font-medium">${member.name}</span>
-                                        ${roleBadge}
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-white text-sm">${member.name}</span>
+                                        ${member.isCreator ? '<span class="text-xs bg-purple-600 text-white px-1 py-0.5 rounded">Creator</span>' : ''}
                                     </div>
                                 </div>
                                 <span class="text-slate-400 text-xs">${member.email}</span>
                             </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>`;
+                        `).join('')}
+                    </div>
+                </div>` : '';
 
             const teamCardHTML = `<div class="glass p-4 team-card ${isApplied ? 'opacity-70' : ''}" data-team-id="${team.firebaseId || team.id}">
                 <div>
@@ -375,6 +347,300 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
             teamGrid.insertAdjacentHTML('beforeend', teamCardHTML);
         });
+    };
+
+    // --- CONTACT DETAILS FUNCTIONS ---
+    const showContactDetails = (name, email, skills, availability) => {
+        console.log('showContactDetails called with:', { name, email, skills, availability });
+        
+        const contactModal = document.getElementById('contactModal');
+        const contactDetails = document.getElementById('contactDetails');
+        
+        console.log('Modal elements:', { contactModal, contactDetails });
+        
+        if (!contactModal || !contactDetails) {
+            console.error('Contact modal elements not found!');
+            return;
+        }
+        
+        // Create contact details HTML
+        const contactHTML = `
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-white font-bold text-2xl">${name.charAt(0).toUpperCase()}</span>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">${name}</h3>
+                <p class="text-slate-400">Potential Teammate</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-400">Email</p>
+                        <p class="text-white font-medium">${email}</p>
+                        ${email === 'Email not available' ? '<p class="text-xs text-slate-500 mt-1">This user hasn\'t shared their email yet</p>' : ''}
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-400">Skills</p>
+                        <p class="text-white font-medium">${skills}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-400">Availability</p>
+                        <p class="text-white font-medium">${availability}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        contactDetails.innerHTML = contactHTML;
+        contactModal.classList.remove('hidden');
+        
+        // Store current contact info for copy/send actions
+        window.currentContactInfo = { name, email, skills, availability };
+    };
+
+    const hideContactDetails = () => {
+        const contactModal = document.getElementById('contactModal');
+        contactModal.classList.add('hidden');
+        window.currentContactInfo = null;
+    };
+
+    const copyEmailToClipboard = async () => {
+        if (window.currentContactInfo?.email && window.currentContactInfo.email !== 'Email not available') {
+            try {
+                await navigator.clipboard.writeText(window.currentContactInfo.email);
+                alert('Email copied to clipboard!');
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = window.currentContactInfo.email;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Email copied to clipboard!');
+            }
+        } else {
+            alert('Email not available for this user');
+        }
+    };
+
+    const sendMessage = () => {
+        if (window.currentContactInfo?.email && window.currentContactInfo.email !== 'Email not available') {
+            const subject = `Hi ${window.currentContactInfo.name}! Let's connect on Quick Teams`;
+            const body = `Hi ${window.currentContactInfo.name},\n\nI found you through Quick Teams and I'd love to connect! I saw that you're skilled in ${window.currentContactInfo.skills} and available ${window.currentContactInfo.availability}.\n\nLet's chat about potential collaboration opportunities!\n\nBest regards,\n${currentUser.name}`;
+            
+            const mailtoLink = `mailto:${window.currentContactInfo.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoLink);
+        } else {
+            alert('Email not available for this user. You can still see their skills and availability information above.');
+        }
+    };
+
+    // --- SMART MATCHMAKING FUNCTIONS ---
+    const loadPotentialTeammates = async () => {
+        try {
+            console.log('Loading potential teammates...');
+            
+            if (!window.firebaseDb || !window.firebaseGetDocs || !window.firebaseCollection) {
+                console.warn('Firebase not available for matchmaking');
+                return [];
+            }
+
+            // Get all user profiles from Firebase
+            const usersQuery = window.firebaseQuery(window.firebaseCollection(window.firebaseDb, 'userProfiles'));
+            const querySnapshot = await window.firebaseGetDocs(usersQuery);
+            
+            const allUsers = [];
+            querySnapshot.forEach((doc) => {
+                const userData = doc.data();
+                userData.id = doc.id;
+                // Add email if available in the profile data
+                userData.email = userData.email || 'Email not available';
+                allUsers.push(userData);
+            });
+
+            // Filter out current user and users without proper data
+            const currentUserId = window.firebaseAuth?.currentUser?.uid;
+            const potentialTeammates = allUsers.filter(user => 
+                user.id !== currentUserId && 
+                user.name && 
+                user.name !== 'Guest User' &&
+                user.skills && 
+                Array.isArray(user.skills) && 
+                user.skills.length > 0
+            );
+
+            console.log(`Found ${potentialTeammates.length} potential teammates`);
+            return potentialTeammates;
+        } catch (error) {
+            console.error('Error loading potential teammates:', error);
+            return [];
+        }
+    };
+
+    const calculateTeammateCompatibility = (teammate, currentUser) => {
+        let totalScore = 0;
+        let maxPossibleScore = 0;
+        
+        // Skills compatibility (80% weight)
+        if (Array.isArray(teammate.skills) && Array.isArray(currentUser.skills) && teammate.skills.length > 0) {
+            const matchingSkills = teammate.skills.filter(skill => 
+                currentUser.skills.some(userSkill => 
+                    userSkill.toLowerCase().trim() === skill.toLowerCase().trim()
+                )
+            ).length;
+            
+            const skillsScore = (matchingSkills / Math.max(teammate.skills.length, currentUser.skills.length)) * 80;
+            totalScore += skillsScore;
+            maxPossibleScore += 80;
+        } else {
+            maxPossibleScore += 80;
+        }
+        
+        // Availability compatibility (20% weight)
+        if (teammate.availability === 'Anytime' || teammate.availability === currentUser.availability) {
+            totalScore += 20;
+        }
+        maxPossibleScore += 20;
+        
+        // Calculate percentage
+        const percentage = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
+        return percentage;
+    };
+
+    const renderMatchmaking = async () => {
+        const matchmakingGrid = document.getElementById('matchmakingGrid');
+        if (!matchmakingGrid) return;
+
+        try {
+            // Show loading state
+            matchmakingGrid.innerHTML = '<div class="col-span-full text-center text-slate-400">Finding potential teammates...</div>';
+            
+            const potentialTeammates = await loadPotentialTeammates();
+            
+            if (potentialTeammates.length === 0) {
+                matchmakingGrid.innerHTML = '<div class="col-span-full text-center text-slate-400">No potential teammates found. Try updating your profile with more skills!</div>';
+                return;
+            }
+
+            // Calculate compatibility scores
+            const teammatesWithScores = potentialTeammates.map(teammate => ({
+                teammate,
+                compatibility: calculateTeammateCompatibility(teammate, currentUser)
+            }));
+
+            // Sort by compatibility score (highest first)
+            teammatesWithScores.sort((a, b) => b.compatibility - a.compatibility);
+
+            // Render teammate cards
+            matchmakingGrid.innerHTML = '';
+            teammatesWithScores.forEach(({ teammate, compatibility }) => {
+                const matchingSkills = Array.isArray(teammate.skills) && Array.isArray(currentUser.skills) 
+                    ? teammate.skills.filter(skill => 
+                        currentUser.skills.some(userSkill => 
+                            userSkill.toLowerCase().trim() === skill.toLowerCase().trim()
+                        )
+                    ) : [];
+
+                const complementarySkills = Array.isArray(teammate.skills) 
+                    ? teammate.skills.filter(skill => 
+                        !currentUser.skills.some(userSkill => 
+                            userSkill.toLowerCase().trim() === skill.toLowerCase().trim()
+                        )
+                    ) : [];
+
+                const getCompatibilityColor = (score) => {
+                    if (score >= 80) return 'text-emerald-400 bg-emerald-900/30';
+                    if (score >= 60) return 'text-amber-400 bg-amber-900/30';
+                    if (score >= 40) return 'text-blue-400 bg-blue-900/30';
+                    if (score >= 20) return 'text-orange-400 bg-orange-900/30';
+                    return 'text-red-400 bg-red-900/30';
+                };
+
+                const teammateCardHTML = `
+                    <div class="glass p-6 rounded-xl hover:shadow-lg transition-all duration-300">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white font-bold text-lg">${teammate.name.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-white">${teammate.name}</h3>
+                                    <p class="text-sm text-slate-400">${teammate.availability || 'Not specified'}</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-medium ${getCompatibilityColor(compatibility)}">
+                                ${compatibility}% Match
+                            </span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-slate-300">Compatibility</span>
+                                <span class="text-sm font-medium text-white">${compatibility}%</span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div class="h-2 rounded-full transition-all duration-500 ${compatibility >= 80 ? 'bg-emerald-400' : compatibility >= 60 ? 'bg-amber-400' : compatibility >= 40 ? 'bg-blue-400' : compatibility >= 20 ? 'bg-orange-400' : 'bg-red-400'}" style="width: ${compatibility}%"></div>
+                            </div>
+                        </div>
+
+                        ${matchingSkills.length > 0 ? `
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-white mb-2">Shared Skills:</h4>
+                            <div class="flex flex-wrap gap-1">
+                                ${matchingSkills.map(skill => `<span class="px-2 py-1 bg-emerald-900/70 text-emerald-300 text-xs rounded">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${complementarySkills.length > 0 ? `
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-white mb-2">Their Additional Skills:</h4>
+                            <div class="flex flex-wrap gap-1">
+                                ${complementarySkills.map(skill => `<span class="px-2 py-1 bg-blue-900/70 text-blue-300 text-xs rounded">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+
+                        <div class="flex gap-2">
+                            <button class="connect-btn w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors" data-teammate-id="${teammate.id}" data-teammate-name="${teammate.name}" data-teammate-email="${teammate.email || 'Email not available'}" data-teammate-skills="${teammate.skills ? teammate.skills.join(', ') : 'None'}" data-teammate-availability="${teammate.availability || 'Not specified'}">
+                                Get Contact Details
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                matchmakingGrid.insertAdjacentHTML('beforeend', teammateCardHTML);
+            });
+
+        } catch (error) {
+            console.error('Error rendering matchmaking:', error);
+            matchmakingGrid.innerHTML = '<div class="col-span-full text-center text-red-400">Error loading potential teammates. Please try again.</div>';
+        }
     };
 
     // --- CORE LOGIC ---
@@ -591,6 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await window.firebaseSetDoc(userDocRef, {
                 ...profileData,
                 userId: userId,
+                email: window.firebaseAuth?.currentUser?.email || 'Email not available',
                 lastUpdated: new Date().toISOString()
             }, { merge: true });
             
@@ -630,13 +897,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadNotifications = async () => {
         try {
             if (!window.firebaseAuth?.currentUser || !window.firebaseDb || !window.firebaseGetDocs || !window.firebaseCollection) {
-                console.warn('Firebase not ready for loading notifications');
                 return [];
             }
 
             const userId = window.firebaseAuth.currentUser.uid;
-            console.log('Loading notifications for user:', userId);
-            
             const notificationsQuery = window.firebaseQuery(
                 window.firebaseCollection(window.firebaseDb, 'notifications'),
                 window.firebaseOrderBy('createdAt', 'desc')
@@ -650,13 +914,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (notification.recipientId === userId) {
                     notifications.push({
                         id: doc.id,
-                        ...notification,
-                        createdAt: new Date(notification.createdAt)
+                        ...notification
                     });
                 }
             });
 
-            console.log(`Loaded ${notifications.length} notifications for user ${userId}`);
             return notifications;
         } catch (error) {
             console.error('Error loading notifications:', error);
@@ -679,21 +941,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const deleteNotification = async (notificationId) => {
-        try {
-            if (!window.firebaseDb || !window.firebaseDeleteDoc || !window.firebaseDoc) {
-                return false;
-            }
-
-            const notificationRef = window.firebaseDoc(window.firebaseDb, 'notifications', notificationId);
-            await window.firebaseDeleteDoc(notificationRef);
-            return true;
-        } catch (error) {
-            console.error('Error deleting notification:', error);
-            return false;
-        }
-    };
-
     const renderNotifications = (notifications) => {
         const notificationsList = document.getElementById('notificationsList');
         if (!notificationsList) return;
@@ -705,7 +952,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         notificationsList.innerHTML = notifications.map(notification => {
             const isRead = notification.isRead;
-            const timeAgo = getTimeAgo(notification.createdAt);
+            const timeAgo = new Date(notification.createdAt).toLocaleString();
             
             let content = '';
             let actionButtons = '';
@@ -735,22 +982,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     actionButtons = `
                         <div class="flex gap-2 mt-3">
-                            <button class="accept-application-btn px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed" 
-                                    data-notification-id="${notification.id}" 
-                                    data-applicant-email="${notification.data.applicantEmail || ''}" 
-                                    data-applicant-name="${notification.data.applicantName || ''}"
-                                    data-team-name="${notification.data.teamName || ''}" 
-                                    data-team-id="${notification.data.teamId || ''}">
+                            <button class="accept-application-btn px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors flex items-center gap-1" data-notification-id="${notification.id}" data-applicant-email="${notification.data.applicantEmail}" data-team-name="${notification.data.teamName}" data-team-id="${notification.data.teamId}">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                 </svg>
                                 Accept
                             </button>
-                            <button class="reject-application-btn px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed" 
-                                    data-notification-id="${notification.id}" 
-                                    data-applicant-email="${notification.data.applicantEmail || ''}" 
-                                    data-applicant-name="${notification.data.applicantName || ''}"
-                                    data-team-name="${notification.data.teamName || ''}">
+                            <button class="reject-application-btn px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center gap-1" data-notification-id="${notification.id}" data-applicant-email="${notification.data.applicantEmail}" data-team-name="${notification.data.teamName}">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                 </svg>
@@ -768,14 +1006,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-white font-medium">Application Accepted!</p>
+                                <p class="text-white font-medium">Application Accepted! 🎉</p>
                                 <p class="text-slate-300 text-sm">You've been accepted to join "${notification.data.teamName}"</p>
                             </div>
                         </div>
                     `;
                     actionButtons = `
                         <div class="mt-3 p-3 bg-blue-900/30 rounded-lg">
-                            <p class="text-sm text-blue-300 font-medium">Contact Team Creator:</p>
+                            <p class="text-sm text-blue-300 font-medium">📧 Contact Team Creator:</p>
                             <p class="text-white text-sm">${notification.data.creatorEmail}</p>
                         </div>
                     `;
@@ -792,6 +1030,35 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <p class="text-white font-medium">Application Rejected</p>
                                 <p class="text-slate-300 text-sm">Your application to join "${notification.data.teamName}" was not accepted</p>
                             </div>
+                        </div>
+                    `;
+                    break;
+                case 'connection_request':
+                    content = `
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-white font-medium">Connection Request</p>
+                                <p class="text-slate-300 text-sm">${notification.data.requesterName} wants to connect with you</p>
+                                ${notification.data.requesterSkills && notification.data.requesterSkills.length > 0 ? `
+                                    <div class="mt-2">
+                                        <p class="text-xs text-slate-400 mb-1">Their Skills:</p>
+                                        <div class="flex gap-1 flex-wrap">
+                                            ${notification.data.requesterSkills.map(skill => `<span class="px-2 py-1 bg-purple-900/50 text-purple-300 text-xs rounded">${skill}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    actionButtons = `
+                        <div class="mt-3 p-3 bg-purple-900/30 rounded-lg">
+                            <p class="text-sm text-purple-300 font-medium">📧 Contact them:</p>
+                            <p class="text-white text-sm">${notification.data.requesterEmail}</p>
                         </div>
                     `;
                     break;
@@ -825,17 +1092,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             badge.classList.add('hidden');
         }
-    };
-
-    const getTimeAgo = (date) => {
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - date) / 1000);
-        
-        if (diffInSeconds < 60) return 'Just now';
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-        return date.toLocaleDateString();
     };
 
     const findUserByEmail = async (email) => {
@@ -922,7 +1178,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 name: currentUser.name || 'Anonymous',
                 email: window.firebaseAuth?.currentUser?.email || 'unknown',
                 joinedAt: new Date().toISOString(),
-                role: 'creator',
                 isCreator: true
             }], // Initialize with creator as first member
             createdAt: new Date().toISOString(),
@@ -1036,19 +1291,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const notificationsModal = document.getElementById('notificationsModal');
         notificationsModal.classList.remove('hidden');
         
-        // Show loading state
-        const notificationsList = document.getElementById('notificationsList');
-        notificationsList.innerHTML = '<p class="text-slate-400 text-center py-8">Loading notifications...</p>';
-        
-        try {
-            // Load and display notifications
-            const notifications = await loadNotifications();
-            renderNotifications(notifications);
-            updateNotificationBadge(notifications);
-        } catch (error) {
-            console.error('Error loading notifications:', error);
-            notificationsList.innerHTML = '<p class="text-red-400 text-center py-8">Error loading notifications. Please try again.</p>';
-        }
+        // Load and display notifications
+        const notifications = await loadNotifications();
+        renderNotifications(notifications);
+        updateNotificationBadge(notifications);
     });
     
     document.getElementById('closeNotificationsBtn').addEventListener('click', () => {
@@ -1072,70 +1318,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle notification actions
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('accept-application-btn')) {
-            try {
-                // Prevent double-clicks
-                if (e.target.disabled) return;
-                e.target.disabled = true;
-                e.target.textContent = 'Processing...';
-                
-                // Disable the reject button too to prevent conflicts
-                const rejectBtn = e.target.parentElement.querySelector('.reject-application-btn');
-                if (rejectBtn) rejectBtn.disabled = true;
-                
-                const notificationId = e.target.dataset.notificationId;
-                const applicantEmail = e.target.dataset.applicantEmail;
-                const teamName = e.target.dataset.teamName;
-                const teamId = e.target.dataset.teamId;
-                
-                console.log('Accepting application:', { notificationId, applicantEmail, teamName, teamId });
-                
-                // Find the team
-                const team = teams.find(t => (t.firebaseId || t.id) === teamId);
-                if (!team) {
-                    alert('Team not found! Please refresh the page and try again.');
-                    return;
+            const notificationId = e.target.dataset.notificationId;
+            const applicantEmail = e.target.dataset.applicantEmail;
+            const teamName = e.target.dataset.teamName;
+            const teamId = e.target.dataset.teamId;
+            
+            // Mark notification as read
+            await markNotificationAsRead(notificationId);
+            
+            // Update team member count and add member info
+            const team = teams.find(t => (t.firebaseId || t.id) === teamId);
+            if (team) {
+                // Initialize teamMembers array if it doesn't exist
+                if (!team.teamMembers) {
+                    team.teamMembers = [];
                 }
                 
-                // Check if team is already full
-                if (team.status === 'Full' || (team.members >= team.capacity)) {
-                    alert('This team is already full! Cannot accept more members.');
-                    return;
+                // Check if applicant is already a member (prevent duplicates)
+                const isAlreadyMember = team.teamMembers.some(member => 
+                    member.email?.toLowerCase() === applicantEmail?.toLowerCase() || 
+                    member.name?.toLowerCase() === notification.data.applicantName?.toLowerCase()
+                );
+                
+                if (!isAlreadyMember) {
+                    // Add the new member to the team
+                    const newMember = {
+                        name: notification.data.applicantName || 'Unknown',
+                        email: applicantEmail,
+                        joinedAt: new Date().toISOString(),
+                        isCreator: false
+                    };
+                    team.teamMembers.push(newMember);
+                    team.members = team.teamMembers.length;
                 }
-                
-                // Get applicant name from notification data
-                const notifications = await loadNotifications();
-                const currentNotification = notifications.find(n => n.id === notificationId);
-                const applicantName = currentNotification?.data?.applicantName || 'Unknown User';
-                
-                // Initialize teamMembers array if it doesn't exist (should include creator)
-                if (!team.teamMembers || team.teamMembers.length === 0) {
-                    team.teamMembers = [{
-                        name: team.createdBy || 'Team Creator',
-                        email: team.creatorEmail || 'unknown',
-                        joinedAt: team.createdAt || new Date().toISOString(),
-                        role: 'creator',
-                        isCreator: true
-                    }];
-                }
-                
-                // Check if applicant is already a team member
-                if (team.teamMembers.some(member => member.email === applicantEmail)) {
-                    alert('This person is already a member of your team!');
-                    return;
-                }
-                
-                // Add the new member to the team
-                const newMember = {
-                    name: applicantName,
-                    email: applicantEmail,
-                    joinedAt: new Date().toISOString(),
-                    role: 'member',
-                    isCreator: false
-                };
-                team.teamMembers.push(newMember);
-                
-                // Update team member count based on actual teamMembers array length
-                team.members = team.teamMembers.length;
                 
                 // Update team status if full
                 if (team.members >= team.capacity) {
@@ -1151,135 +1366,58 @@ document.addEventListener('DOMContentLoaded', () => {
                         teamMembers: team.teamMembers,
                         lastUpdated: new Date().toISOString()
                     });
-                    console.log('Team updated in Firebase successfully');
                 }
                 
                 // Update local storage
                 localStorage.setItem('teams', JSON.stringify(teams));
                 
-                // Send acceptance notification to applicant
-                const applicant = await findUserByEmail(applicantEmail);
-                if (applicant) {
-                    await sendNotification(applicant.uid, 'application_accepted', {
-                        teamName: teamName,
-                        creatorEmail: window.firebaseAuth.currentUser.email,
-                        teamId: teamId,
-                        creatorName: window.firebaseAuth.currentUser.displayName || 'Team Leader'
-                    });
-                    console.log('Acceptance notification sent to applicant');
-                }
-                
-                // Delete the processed notification
-                await deleteNotification(notificationId);
-                console.log('Application notification deleted after processing');
-                
-                // Show success popup with detailed information
-                const successMessage = `Application Accepted Successfully!
-
-${applicantName} has been added to your team "${teamName}"
-
-Contact Information:
-   Email: ${applicantEmail}
-
-Team Status:
-   Current Members: ${team.members}/${team.capacity}
-   Status: ${team.status}
-
-The applicant has been notified of their acceptance and provided with your contact email.`;
-                
-                alert(successMessage);
-                
                 // Refresh team display
                 filterAndRender();
-                
-                // Refresh notifications
-                const updatedNotifications = await loadNotifications();
-                renderNotifications(updatedNotifications);
-                updateNotificationBadge(updatedNotifications);
-                
-            } catch (error) {
-                console.error('Error accepting application:', error);
-                alert('Error accepting application. Please try again.');
-            } finally {
-                // Re-enable button
-                e.target.disabled = false;
-                e.target.innerHTML = `
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    Accept
-                `;
             }
+            
+            // Send acceptance notification to applicant
+            const applicant = await findUserByEmail(applicantEmail);
+            if (applicant) {
+                await sendNotification(applicant.uid, 'application_accepted', {
+                    teamName: teamName,
+                    creatorEmail: window.firebaseAuth.currentUser.email,
+                    teamId: teamId
+                });
+            }
+            
+            // Show success message with email exchange
+            alert(`✅ Application accepted! Team now has ${team.members}/${team.capacity} members.\n\nYou can contact the applicant at: ${applicantEmail}`);
+            
+            // Refresh notifications
+            const notifications = await loadNotifications();
+            renderNotifications(notifications);
+            updateNotificationBadge(notifications);
         }
         
         if (e.target.classList.contains('reject-application-btn')) {
-            try {
-                // Prevent double-clicks
-                if (e.target.disabled) return;
-                e.target.disabled = true;
-                e.target.textContent = 'Processing...';
-                
-                // Disable the accept button too to prevent conflicts
-                const acceptBtn = e.target.parentElement.querySelector('.accept-application-btn');
-                if (acceptBtn) acceptBtn.disabled = true;
-                
-                const notificationId = e.target.dataset.notificationId;
-                const applicantEmail = e.target.dataset.applicantEmail;
-                const teamName = e.target.dataset.teamName;
-                
-                console.log('Rejecting application:', { notificationId, applicantEmail, teamName });
-                
-                // Get applicant name from notification data
-                const notifications = await loadNotifications();
-                const currentNotification = notifications.find(n => n.id === notificationId);
-                const applicantName = currentNotification?.data?.applicantName || 'Unknown User';
-                
-                // Send rejection notification to applicant
-                const applicant = await findUserByEmail(applicantEmail);
-                if (applicant) {
-                    await sendNotification(applicant.uid, 'application_rejected', {
-                        teamName: teamName,
-                        creatorEmail: window.firebaseAuth.currentUser.email,
-                        creatorName: window.firebaseAuth.currentUser.displayName || 'Team Leader'
-                    });
-                    console.log('Rejection notification sent to applicant');
-                }
-                
-                // Delete the processed notification
-                await deleteNotification(notificationId);
-                console.log('Application notification deleted after processing');
-                
-                // Show rejection popup with detailed information
-                const rejectionMessage = `Application Rejected
-
-Applicant: ${applicantName}
-Email: ${applicantEmail}
-Team: "${teamName}"
-
-The applicant has been notified of the rejection and provided with your contact email for future opportunities.
-
-Tip: You can always reach out to them later if you have other projects that might be a better fit.`;
-                
-                alert(rejectionMessage);
-                
-                // Refresh notifications
-                const updatedNotifications = await loadNotifications();
-                renderNotifications(updatedNotifications);
-                updateNotificationBadge(updatedNotifications);
-                
-            } catch (error) {
-                console.error('Error rejecting application:', error);
-                alert('Error rejecting application. Please try again.');
-            } finally {
-                // Re-enable button
-                e.target.disabled = false;
-                e.target.innerHTML = `
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                    </svg>
-                    Reject
-                `;
+            const notificationId = e.target.dataset.notificationId;
+            const applicantEmail = e.target.dataset.applicantEmail;
+            const teamName = e.target.dataset.teamName;
+            
+            // Mark notification as read
+            await markNotificationAsRead(notificationId);
+            
+            // Send rejection notification to applicant
+            const applicant = await findUserByEmail(applicantEmail);
+            if (applicant) {
+                await sendNotification(applicant.uid, 'application_rejected', {
+                    teamName: teamName,
+                    creatorEmail: window.firebaseAuth.currentUser.email
+                });
             }
+            
+            // Show rejection message
+            alert(`❌ Application rejected for team "${teamName}". The applicant has been notified.`);
+            
+            // Refresh notifications
+            const notifications = await loadNotifications();
+            renderNotifications(notifications);
+            updateNotificationBadge(notifications);
         }
     });
 
@@ -1300,40 +1438,24 @@ Tip: You can always reach out to them later if you have other projects that migh
                         alert('This team is already full!');
                         return;
                     }
-                    
-                    // Check if user already applied
-                    if (appliedTeamIds.has(teamId)) {
-                        alert('You have already applied to this team!');
-                        return;
-                    }
-                    
                     // Send notification to team creator
                     const notificationData = {
                         applicantName: currentUser.name,
                         applicantEmail: window.firebaseAuth.currentUser.email,
                         teamName: team.name,
                         teamId: teamId,
-                        applicantSkills: currentUser.skills || [],
-                        appliedAt: new Date().toISOString()
+                        applicantSkills: currentUser.skills || []
                     };
                     
-                    console.log('Sending team application notification:', notificationData);
-                    
                     // Send notification to team creator
-                    const notificationSent = await sendNotification(team.creatorId, 'team_application', notificationData);
+                    await sendNotification(team.creatorId, 'team_application', notificationData);
                     
-                    if (notificationSent) {
-                        // Add to applied teams
-                        appliedTeamIds.add(teamId);
-                        localStorage.setItem('appliedTeamIds', JSON.stringify(Array.from(appliedTeamIds)));
-                        filterAndRender();
-                        
-                        alert(`Application sent successfully!\n\nYour application to join "${team.name}" has been sent to the team creator.\n\nYou will be notified when they respond to your application.`);
-                    } else {
-                        alert('Failed to send application. Please try again.');
-                    }
-                } else {
-                    alert('Unable to apply. Please make sure you are logged in and the team exists.');
+                    // Add to applied teams
+                    appliedTeamIds.add(teamId);
+                    localStorage.setItem('appliedTeamIds', JSON.stringify(Array.from(appliedTeamIds)));
+                    filterAndRender();
+                    
+                    alert('Application sent! The team creator will be notified.');
                 }
             } 
         } 
@@ -1357,30 +1479,87 @@ Tip: You can always reach out to them later if you have other projects that migh
                     const teamData = doc.data();
                     teamData.id = doc.id;
                     teamData.firebaseId = doc.id;
+                    
+                    // Ensure teamMembers array exists and includes creator
+                    if (!teamData.teamMembers) {
+                        teamData.teamMembers = [];
+                    }
+                    
+                    // Add creator to teamMembers if not already present
+                    const hasCreator = teamData.teamMembers.some(member => member.isCreator);
+                    if (!hasCreator && teamData.creatorId) {
+                        teamData.teamMembers.unshift({
+                            name: teamData.createdBy || 'Anonymous',
+                            email: teamData.creatorEmail || 'unknown',
+                            joinedAt: teamData.createdAt || new Date().toISOString(),
+                            isCreator: true
+                        });
+                    }
+                    
+                    // Remove duplicate members based on email and name
+                    const uniqueMembers = [];
+                    const seenEmails = new Set();
+                    const seenNames = new Set();
+                    
+                    teamData.teamMembers.forEach(member => {
+                        const emailKey = member.email?.toLowerCase() || '';
+                        const nameKey = member.name?.toLowerCase() || '';
+                        
+                        if (!seenEmails.has(emailKey) && !seenNames.has(nameKey)) {
+                            uniqueMembers.push(member);
+                            seenEmails.add(emailKey);
+                            seenNames.add(nameKey);
+                        }
+                    });
+                    
+                    teamData.teamMembers = uniqueMembers;
+                    
+                    // Update member count to match teamMembers length
+                    teamData.members = teamData.teamMembers.length;
+                    
                     firebaseTeams.push(teamData);
                     console.log('Loaded team from Firebase:', teamData.name, 'ID:', doc.id);
                 });
                 
                 // Replace local teams with Firebase teams to ensure synchronization
                 if (!Array.isArray(teams)) {
-                    console.warn('Teams is not an array, resetting to empty array');
-                    teams = [];
+                    console.warn('Teams is not an array, resetting to initial teams');
+                    teams = initialTeams;
                 }
                 
-                // Only keep Firebase teams - remove all local teams without Firebase IDs
-                // This ensures only real Firebase teams are shown
-                teams = firebaseTeams;
+                // Keep local teams that don't have Firebase IDs (fallback for offline)
+                const localOnlyTeams = teams.filter(team => !team.firebaseId);
                 
-                // Clean up and fix team member structure
-                teams = ensureTeamCreatorIncluded(teams);
+                // Combine Firebase teams with local-only teams
+                teams = [...firebaseTeams, ...localOnlyTeams];
                 
-                // Final cleanup to remove any dummy teams that might have slipped through
-                cleanupDummyTeams();
+                // Clean up duplicates in all teams
+                teams.forEach(team => {
+                    if (team.teamMembers && Array.isArray(team.teamMembers)) {
+                        const uniqueMembers = [];
+                        const seenEmails = new Set();
+                        const seenNames = new Set();
+                        
+                        team.teamMembers.forEach(member => {
+                            const emailKey = member.email?.toLowerCase() || '';
+                            const nameKey = member.name?.toLowerCase() || '';
+                            
+                            if (!seenEmails.has(emailKey) && !seenNames.has(nameKey)) {
+                                uniqueMembers.push(member);
+                                seenEmails.add(emailKey);
+                                seenNames.add(nameKey);
+                            }
+                        });
+                        
+                        team.teamMembers = uniqueMembers;
+                        team.members = team.teamMembers.length;
+                    }
+                });
                 
                 // Save updated teams to localStorage
                 localStorage.setItem('teams', JSON.stringify(teams));
                 console.log(`Successfully synchronized ${firebaseTeams.length} teams from Firebase`);
-                console.log('Only Firebase teams are now displayed');
+                console.log(`Kept ${localOnlyTeams.length} local-only teams`);
             } else {
                 console.warn('Firebase functions not available for loading teams');
             }
@@ -1394,126 +1573,11 @@ Tip: You can always reach out to them later if you have other projects that migh
         }
     };
     
-    // --- TEAM MEMBER INITIALIZATION ---
-    const ensureTeamCreatorIncluded = (teams) => {
-        teams.forEach(team => {
-            // Ensure team has creator information
-            if (!team.createdBy && team.creatorEmail) {
-                team.createdBy = 'Team Creator';
-            }
-            if (!team.creatorEmail && team.createdBy) {
-                team.creatorEmail = 'unknown@example.com';
-            }
-            if (!team.creatorId) {
-                team.creatorId = 'unknown-creator';
-            }
-            
-            // Ensure team has proper member structure
-            if (!team.teamMembers || !Array.isArray(team.teamMembers)) {
-                team.teamMembers = [{
-                    name: team.createdBy || 'Team Creator',
-                    email: team.creatorEmail || 'unknown@example.com',
-                    joinedAt: team.createdAt || new Date().toISOString(),
-                    role: 'creator',
-                    isCreator: true
-                }];
-            }
-            
-            // Ensure creator is always in teamMembers array
-            const hasCreator = team.teamMembers.some(member => 
-                member.email === team.creatorEmail || 
-                member.isCreator || 
-                member.role === 'creator'
-            );
-            
-            if (!hasCreator) {
-                team.teamMembers.unshift({
-                    name: team.createdBy || 'Team Creator',
-                    email: team.creatorEmail || 'unknown@example.com',
-                    joinedAt: team.createdAt || new Date().toISOString(),
-                    role: 'creator',
-                    isCreator: true
-                });
-            }
-            
-            // Remove duplicates
-            team.teamMembers = team.teamMembers.filter((member, index, self) => 
-                index === self.findIndex(m => m.email === member.email)
-            );
-            
-            // Ensure creator is marked properly
-            const creatorMember = team.teamMembers.find(m => m.email === team.creatorEmail);
-            if (creatorMember) {
-                creatorMember.role = 'creator';
-                creatorMember.isCreator = true;
-                creatorMember.name = team.createdBy || 'Team Creator';
-            }
-            
-            // Update member count to match actual teamMembers length
-            team.members = team.teamMembers.length;
-        });
-        
-        return teams;
-    };
-
-    // --- CLEANUP DUMMY DATA ---
-    const cleanupDummyTeams = () => {
-        const dummyTeamNames = [
-            'AI Hackathon Warriors',
-            'Web Dev Wizards', 
-            'Game Changers',
-            'Data Dynamos'
-        ];
-        
-        // Remove dummy teams from localStorage
-        const storedTeams = localStorage.getItem('teams');
-        if (storedTeams) {
-            try {
-                const parsedTeams = JSON.parse(storedTeams);
-                if (Array.isArray(parsedTeams)) {
-                    const filteredTeams = parsedTeams.filter(team => 
-                        !dummyTeamNames.includes(team.name)
-                    );
-                    localStorage.setItem('teams', JSON.stringify(filteredTeams));
-                    console.log('Cleaned up dummy teams from localStorage');
-                }
-            } catch (error) {
-                console.error('Error cleaning up dummy teams:', error);
-                // If there's an error parsing, clear the teams completely
-                localStorage.setItem('teams', JSON.stringify([]));
-                console.log('Cleared teams localStorage due to parsing error');
-            }
-        }
-        
-        // Also clean up the current teams array
-        if (Array.isArray(teams)) {
-            teams = teams.filter(team => 
-                !dummyTeamNames.includes(team.name)
-            );
-            console.log('Cleaned up dummy teams from current teams array');
-        }
-    };
-
-    // --- FORCE CLEAN SLATE ---
-    const forceCleanSlate = () => {
-        // Clear all teams from localStorage
-        localStorage.setItem('teams', JSON.stringify([]));
-        // Reset teams array to empty
-        teams = [];
-        console.log('Forced clean slate - all teams cleared');
-    };
-
     // --- INITIALIZATION ---
     document.getElementById('year').textContent = new Date().getFullYear();
     
     // Initialize app - load profile and teams
     const initializeApp = async () => {
-        // Force clean slate to ensure only Firebase teams are shown
-        forceCleanSlate();
-        
-        // Clean up any existing dummy teams first
-        cleanupDummyTeams();
-        
         // Wait for Firebase to be ready
         await new Promise(resolve => setTimeout(resolve, 2000));
         
@@ -1542,15 +1606,39 @@ Tip: You can always reach out to them later if you have other projects that migh
         // Load teams from Firebase and render
         await loadTeamsFromFirebase();
         
-        // Ensure all teams have proper creator information
-        teams = ensureTeamCreatorIncluded(teams);
-        
-        // Final cleanup to remove any dummy teams
-        cleanupDummyTeams();
-        
-        localStorage.setItem('teams', JSON.stringify(teams));
+        // Clean up any duplicate members
+        if (Array.isArray(teams)) {
+            teams.forEach(team => {
+                if (team.teamMembers && Array.isArray(team.teamMembers)) {
+                    const uniqueMembers = [];
+                    const seenEmails = new Set();
+                    const seenNames = new Set();
+                    
+                    team.teamMembers.forEach(member => {
+                        const emailKey = member.email?.toLowerCase() || '';
+                        const nameKey = member.name?.toLowerCase() || '';
+                        
+                        if (!seenEmails.has(emailKey) && !seenNames.has(nameKey)) {
+                            uniqueMembers.push(member);
+                            seenEmails.add(emailKey);
+                            seenNames.add(nameKey);
+                        }
+                    });
+                    
+                    team.teamMembers = uniqueMembers;
+                    team.members = team.teamMembers.length;
+                }
+            });
+            
+            // Save cleaned teams to localStorage
+            localStorage.setItem('teams', JSON.stringify(teams));
+            console.log('Cleaned up duplicate members in all teams');
+        }
         
         filterAndRender();
+        
+        // Load matchmaking
+        await renderMatchmaking();
         
         // Load notifications and update badge
         if (window.firebaseAuth?.currentUser) {
@@ -1588,7 +1676,7 @@ Tip: You can always reach out to them later if you have other projects that migh
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
   import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
   const firebaseConfig = { apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU", authDomain: "quick-teams-29685.firebaseapp.com", projectId: "quick-teams-29685", storageBucket: "quick-teams-29685.firebasestorage.app", messagingSenderId: "814121228704", appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5", measurementId: "G-Y1EY57N7BC" };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -1607,7 +1695,6 @@ Tip: You can always reach out to them later if you have other projects that migh
   window.firebaseSetDoc = setDoc;
   window.firebaseGetDoc = getDoc;
   window.firebaseUpdateDoc = updateDoc;
-  window.firebaseDeleteDoc = deleteDoc;
   
   // Handle authentication state changes
   onAuthStateChanged(auth, async (user) => {
@@ -1718,6 +1805,46 @@ Tip: You can always reach out to them later if you have other projects that migh
     } catch (error) {
       console.error('Sign out error:', error);
       alert('Error signing out. Please try again.');
+    }
+  });
+
+  // Matchmaking event listeners
+  document.getElementById('refreshMatchmakingBtn').addEventListener('click', async () => {
+    await renderMatchmaking();
+  });
+
+  // Contact modal event listeners
+  document.getElementById('closeContactBtn').addEventListener('click', hideContactDetails);
+  document.getElementById('copyEmailBtn').addEventListener('click', copyEmailToClipboard);
+  document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+  
+  // Close contact modal when clicking outside
+  document.getElementById('contactModal').addEventListener('click', (e) => {
+    if (e.target.id === 'contactModal') {
+      hideContactDetails();
+    }
+  });
+
+  // Handle matchmaking actions
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('connect-btn')) {
+      console.log('Connect button clicked!');
+      const teammateId = e.target.dataset.teammateId;
+      const teammateName = e.target.dataset.teammateName;
+      const teammateEmail = e.target.dataset.teammateEmail;
+      const teammateSkills = e.target.dataset.teammateSkills;
+      const teammateAvailability = e.target.dataset.teammateAvailability;
+      
+      console.log('Teammate data:', {
+        id: teammateId,
+        name: teammateName,
+        email: teammateEmail,
+        skills: teammateSkills,
+        availability: teammateAvailability
+      });
+      
+      // Show contact details popup
+      showContactDetails(teammateName, teammateEmail, teammateSkills, teammateAvailability);
     }
   });
 </script>
