@@ -76,17 +76,9 @@
 
 <!-- Smart Matchmaking Section -->
 <section class="mb-12">
-  <div class="flex justify-between items-center mb-6">
-    <div>
-      <h2 class="text-2xl font-bold text-white">Smart Matchmaking</h2>
-      <p class="text-slate-400 mt-1">Find teammates who match your skills and goals</p>
-    </div>
-    <button id="refreshMatchmakingBtn" class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition flex items-center gap-2">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-      </svg>
-      Refresh
-    </button>
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-white">Smart Matchmaking</h2>
+    <p class="text-slate-400 mt-1">Find teammates who match your skills and goals</p>
   </div>
   <div id="matchmakingGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <!-- Potential teammates will be loaded here -->
@@ -101,7 +93,6 @@
   <div id="search-filter-controls" class="mb-6">
       <div class="glass flex flex-col sm:flex-row gap-4 p-4">
           <input type="search" id="searchInput" placeholder="Search by name or description..." class="flex-grow w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-slate-400 focus:ring-2 focus:ring-purple-500">
-          <select id="skillFilter" class="bg-slate-700 border border-slate-600 rounded-md text-white px-4 py-2 focus:ring-2 focus:ring-purple-500"><option value="">Filter by skill</option></select>
           <button id="resetFilters" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Reset</button>
       </div>
   </div>
@@ -215,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const userProfileCard = document.getElementById('userProfileCard');
     const teamGrid = document.getElementById('teamGrid');
     const searchInput = document.getElementById('searchInput');
-    const skillFilter = document.getElementById('skillFilter');
     const availabilityFilter = document.getElementById('availabilityFilter');
     const resetFiltersBtn = document.getElementById('resetFilters');
     const createTeamModal = document.getElementById('createTeamModal');
@@ -426,8 +416,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!matchmakingGrid) return;
 
         try {
-            // Show loading state
-            matchmakingGrid.innerHTML = '<div class="col-span-full text-center text-slate-400">Finding potential teammates...</div>';
+            // Show loading state with animation
+            matchmakingGrid.innerHTML = `
+                <div class="col-span-full text-center text-slate-400 py-8">
+                    <div class="inline-flex items-center gap-2">
+                        <svg class="w-5 h-5 animate-spin text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Finding potential teammates...
+                    </div>
+                </div>
+            `;
+            
+            // Add a small delay to show the loading state
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             const potentialTeammates = await loadPotentialTeammates();
             
@@ -445,8 +447,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Sort by compatibility score (highest first)
             teammatesWithScores.sort((a, b) => b.compatibility - a.compatibility);
 
-            // Render teammate cards
+            // Render teammate cards with fade-in effect
             matchmakingGrid.innerHTML = '';
+            matchmakingGrid.style.opacity = '0';
+            matchmakingGrid.style.transition = 'opacity 0.3s ease-in-out';
+            
             teammatesWithScores.forEach(({ teammate, compatibility }) => {
                 const matchingSkills = Array.isArray(teammate.skills) && Array.isArray(currentUser.skills) 
                     ? teammate.skills.filter(skill => 
@@ -526,6 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 matchmakingGrid.insertAdjacentHTML('beforeend', teammateCardHTML);
             });
+            
+            // Fade in the grid after rendering
+            setTimeout(() => {
+                matchmakingGrid.style.opacity = '1';
+            }, 100);
 
         } catch (error) {
             console.error('Error rendering matchmaking:', error);
@@ -590,7 +600,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentUser.availability = availabilityFilter.value;
         const searchTerm = searchInput.value.toLowerCase();
-        const selectedSkill = skillFilter.value;
         const filteredTeams = teams.filter(team => {
             // Ensure team has required properties
             if (!team || typeof team !== 'object') return false;
@@ -599,8 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return team.status !== 'Full' && 
                    (team.name.toLowerCase().includes(searchTerm) || 
                     team.description.toLowerCase().includes(searchTerm) ||
-                    (team.competitionName && team.competitionName.toLowerCase().includes(searchTerm))) && 
-                   (selectedSkill ? team.skills.includes(selectedSkill) : true);
+                    (team.competitionName && team.competitionName.toLowerCase().includes(searchTerm)));
         });
         const scoredAndSortedTeams = filteredTeams.map(team => ({ team, score: calculateMatchScore(team, currentUser) })).sort((a, b) => b.score - a.score);
         renderTeams(scoredAndSortedTeams);
@@ -834,6 +842,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const deleteNotification = async (notificationId) => {
+        try {
+            if (!window.firebaseDb || !window.firebaseDeleteDoc || !window.firebaseDoc) {
+                return false;
+            }
+
+            const notificationRef = window.firebaseDoc(window.firebaseDb, 'notifications', notificationId);
+            await window.firebaseDeleteDoc(notificationRef);
+            return true;
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            return false;
+        }
+    };
+
     const renderNotifications = (notifications) => {
         const notificationsList = document.getElementById('notificationsList');
         if (!notificationsList) return;
@@ -952,6 +975,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="mt-3 p-3 bg-purple-900/30 rounded-lg">
                             <p class="text-sm text-purple-300 font-medium">📧 Contact them:</p>
                             <p class="text-white text-sm">${notification.data.requesterEmail}</p>
+                        </div>
+                    `;
+                    break;
+                case 'member_added':
+                    content = `
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-white font-medium">New Team Member Added! 🎉</p>
+                                <p class="text-slate-300 text-sm">${notification.data.memberName} has been added to your team "${notification.data.teamName}"</p>
+                            </div>
+                        </div>
+                    `;
+                    actionButtons = `
+                        <div class="mt-3 p-3 bg-emerald-900/30 rounded-lg">
+                            <p class="text-sm text-emerald-300 font-medium">📧 Contact your new teammate:</p>
+                            <p class="text-white text-sm">${notification.data.memberEmail}</p>
                         </div>
                     `;
                     break;
@@ -1216,8 +1260,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const teamName = e.target.dataset.teamName;
             const teamId = e.target.dataset.teamId;
             
-            // Mark notification as read
-            await markNotificationAsRead(notificationId);
+            // Delete the original application notification
+            await deleteNotification(notificationId);
             
             // Update team member count and add member info
             const team = teams.find(t => (t.firebaseId || t.id) === teamId);
@@ -1266,6 +1310,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Refresh team display
                 filterAndRender();
+                
+                // Send notification to team creator about new member being added
+                await sendNotification(window.firebaseAuth.currentUser.uid, 'member_added', {
+                    memberName: notification.data.applicantName || 'Unknown',
+                    teamName: teamName,
+                    teamId: teamId,
+                    memberEmail: applicantEmail
+                });
             }
             
             // Send acceptance notification to applicant
@@ -1316,8 +1368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     availabilityFilter.addEventListener('change', filterAndRender);
     searchInput.addEventListener('input', filterAndRender);
-    skillFilter.addEventListener('change', filterAndRender);
-    resetFiltersBtn.addEventListener('click', () => { searchInput.value = ''; skillFilter.value = ''; availabilityFilter.value = 'Weekends'; filterAndRender(); });
+    resetFiltersBtn.addEventListener('click', () => { searchInput.value = ''; availabilityFilter.value = 'Weekends'; filterAndRender(); });
     teamGrid.addEventListener('click', async (e) => { 
         if (e.target.classList.contains('apply-btn')) { 
             const card = e.target.closest('.team-card'); 
@@ -1569,7 +1620,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
   import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
   const firebaseConfig = { apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU", authDomain: "quick-teams-29685.firebaseapp.com", projectId: "quick-teams-29685", storageBucket: "quick-teams-29685.firebasestorage.app", messagingSenderId: "814121228704", appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5", measurementId: "G-Y1EY57N7BC" };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -1588,6 +1639,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.firebaseSetDoc = setDoc;
   window.firebaseGetDoc = getDoc;
   window.firebaseUpdateDoc = updateDoc;
+  window.firebaseDeleteDoc = deleteDoc;
   
   // Handle authentication state changes
   onAuthStateChanged(auth, async (user) => {
@@ -1701,10 +1753,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Matchmaking event listeners
-  document.getElementById('refreshMatchmakingBtn').addEventListener('click', async () => {
-    await renderMatchmaking();
-  });
 
 
 
