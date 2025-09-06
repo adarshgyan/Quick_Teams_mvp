@@ -131,7 +131,25 @@
 <div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
   <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4 modal-content-responsive">
     <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Edit Your Profile</h2><button id="closeEditModalBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div>
-    <form id="editProfileForm"><div class="mb-4"><label for="userNameInput" class="block text-sm font-medium text-slate-300 mb-2">Your Name</label><input type="text" id="userNameInput" name="userName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required></div><div class="mb-6"><label for="userSkillsInput" class="block text-sm font-medium text-slate-300 mb-2">Your Skills (comma-separated)</label><input type="text" id="userSkillsInput" name="userSkills" placeholder="e.g., React, Python, Figma" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500"></div><div class="flex justify-end gap-4"><button type="button" id="cancelEditBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button><button type="submit" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Save Changes</button></div></form>
+    <form id="editProfileForm">
+      <div class="mb-4">
+        <label for="userNameInput" class="block text-sm font-medium text-slate-300 mb-2">Your Name</label>
+        <input type="text" id="userNameInput" name="userName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500" required>
+      </div>
+      <div class="mb-4">
+        <label for="userSkillsInput" class="block text-sm font-medium text-slate-300 mb-2">Your Skills (comma-separated)</label>
+        <input type="text" id="userSkillsInput" name="userSkills" placeholder="e.g., React, Python, Figma" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500">
+      </div>
+      <div class="mb-6">
+        <label for="userEmailInput" class="block text-sm font-medium text-slate-300 mb-2">Contact Email</label>
+        <input type="email" id="userEmailInput" name="userEmail" placeholder="your.email@example.com" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-purple-500">
+        <p class="text-xs text-slate-400 mt-1">This email will be shared with potential teammates</p>
+      </div>
+      <div class="flex justify-end gap-4">
+        <button type="button" id="cancelEditBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Save Changes</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -151,26 +169,6 @@
   </div>
 </div>
 
-<!-- Contact Details Modal -->
-<div id="contactModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
-  <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-white">Contact Details</h2>
-      <button id="closeContactBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
-    </div>
-    <div id="contactDetails" class="space-y-4">
-      <!-- Contact details will be loaded here -->
-    </div>
-    <div class="flex gap-3 mt-6">
-      <button id="copyEmailBtn" class="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-        Copy Email
-      </button>
-      <button id="sendMessageBtn" class="flex-1 py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-        Send Message
-      </button>
-    </div>
-  </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -349,115 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- CONTACT DETAILS FUNCTIONS ---
-    const showContactDetails = (name, email, skills, availability) => {
-        console.log('showContactDetails called with:', { name, email, skills, availability });
-        
-        const contactModal = document.getElementById('contactModal');
-        const contactDetails = document.getElementById('contactDetails');
-        
-        console.log('Modal elements:', { contactModal, contactDetails });
-        
-        if (!contactModal || !contactDetails) {
-            console.error('Contact modal elements not found!');
-            return;
-        }
-        
-        // Create contact details HTML
-        const contactHTML = `
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-white font-bold text-2xl">${name.charAt(0).toUpperCase()}</span>
-                </div>
-                <h3 class="text-xl font-semibold text-white mb-2">${name}</h3>
-                <p class="text-slate-400">Potential Teammate</p>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-400">Email</p>
-                        <p class="text-white font-medium">${email}</p>
-                        ${email === 'Email not available' ? '<p class="text-xs text-slate-500 mt-1">This user hasn\'t shared their email yet</p>' : ''}
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-400">Skills</p>
-                        <p class="text-white font-medium">${skills}</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-400">Availability</p>
-                        <p class="text-white font-medium">${availability}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        contactDetails.innerHTML = contactHTML;
-        contactModal.classList.remove('hidden');
-        
-        // Store current contact info for copy/send actions
-        window.currentContactInfo = { name, email, skills, availability };
-    };
-
-    const hideContactDetails = () => {
-        const contactModal = document.getElementById('contactModal');
-        contactModal.classList.add('hidden');
-        window.currentContactInfo = null;
-    };
-
-    const copyEmailToClipboard = async () => {
-        if (window.currentContactInfo?.email && window.currentContactInfo.email !== 'Email not available') {
-            try {
-                await navigator.clipboard.writeText(window.currentContactInfo.email);
-                alert('Email copied to clipboard!');
-            } catch (err) {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = window.currentContactInfo.email;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                alert('Email copied to clipboard!');
-            }
-        } else {
-            alert('Email not available for this user');
-        }
-    };
-
-    const sendMessage = () => {
-        if (window.currentContactInfo?.email && window.currentContactInfo.email !== 'Email not available') {
-            const subject = `Hi ${window.currentContactInfo.name}! Let's connect on Quick Teams`;
-            const body = `Hi ${window.currentContactInfo.name},\n\nI found you through Quick Teams and I'd love to connect! I saw that you're skilled in ${window.currentContactInfo.skills} and available ${window.currentContactInfo.availability}.\n\nLet's chat about potential collaboration opportunities!\n\nBest regards,\n${currentUser.name}`;
-            
-            const mailtoLink = `mailto:${window.currentContactInfo.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.open(mailtoLink);
-        } else {
-            alert('Email not available for this user. You can still see their skills and availability information above.');
-        }
-    };
 
     // --- SMART MATCHMAKING FUNCTIONS ---
     const loadPotentialTeammates = async () => {
@@ -477,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             querySnapshot.forEach((doc) => {
                 const userData = doc.data();
                 userData.id = doc.id;
-                // Add email if available in the profile data
+                // Ensure email is included from the profile data
                 userData.email = userData.email || 'Email not available';
                 allUsers.push(userData);
             });
@@ -500,6 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return [];
         }
     };
+
 
     const calculateTeammateCompatibility = (teammate, currentUser) => {
         let totalScore = 0;
@@ -720,6 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openEditProfileModal = () => {
         editProfileModal.querySelector('#userNameInput').value = currentUser.name;
         editProfileModal.querySelector('#userSkillsInput').value = currentUser.skills.join(', ');
+        editProfileModal.querySelector('#userEmailInput').value = currentUser.email || '';
         editProfileModal.classList.remove('hidden');
     };
     const closeEditProfileModal = () => editProfileModal.classList.add('hidden');
@@ -740,12 +631,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const newName = editProfileModal.querySelector('#userNameInput').value.trim();
             const newSkillsText = editProfileModal.querySelector('#userSkillsInput').value.trim();
             const newSkills = newSkillsText ? newSkillsText.split(',').map(s => s.trim()).filter(Boolean) : [];
+            const newEmail = editProfileModal.querySelector('#userEmailInput').value.trim();
             
-            console.log('New profile data:', { name: newName, skills: newSkills });
+            console.log('New profile data:', { name: newName, skills: newSkills, email: newEmail });
             
             // Update current user data
             currentUser.name = newName;
             currentUser.skills = newSkills;
+            currentUser.email = newEmail || 'Email not available';
             
             console.log('Updated currentUser:', currentUser);
             
@@ -857,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await window.firebaseSetDoc(userDocRef, {
                 ...profileData,
                 userId: userId,
-                email: window.firebaseAuth?.currentUser?.email || 'Email not available',
+                email: profileData.email || window.firebaseAuth?.currentUser?.email || 'Email not available',
                 lastUpdated: new Date().toISOString()
             }, { merge: true });
             
@@ -1813,38 +1706,24 @@ document.addEventListener('DOMContentLoaded', () => {
     await renderMatchmaking();
   });
 
-  // Contact modal event listeners
-  document.getElementById('closeContactBtn').addEventListener('click', hideContactDetails);
-  document.getElementById('copyEmailBtn').addEventListener('click', copyEmailToClipboard);
-  document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
-  
-  // Close contact modal when clicking outside
-  document.getElementById('contactModal').addEventListener('click', (e) => {
-    if (e.target.id === 'contactModal') {
-      hideContactDetails();
-    }
-  });
+
+
 
   // Handle matchmaking actions
   document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('connect-btn')) {
-      console.log('Connect button clicked!');
       const teammateId = e.target.dataset.teammateId;
       const teammateName = e.target.dataset.teammateName;
       const teammateEmail = e.target.dataset.teammateEmail;
       const teammateSkills = e.target.dataset.teammateSkills;
       const teammateAvailability = e.target.dataset.teammateAvailability;
       
-      console.log('Teammate data:', {
-        id: teammateId,
-        name: teammateName,
-        email: teammateEmail,
-        skills: teammateSkills,
-        availability: teammateAvailability
-      });
-      
-      // Show contact details popup
-      showContactDetails(teammateName, teammateEmail, teammateSkills, teammateAvailability);
+      // Show contact details in alert (same as notification system)
+      if (teammateEmail && teammateEmail !== 'Email not available') {
+        alert(`📧 Contact Details for ${teammateName}:\n\nEmail: ${teammateEmail}\nSkills: ${teammateSkills}\nAvailability: ${teammateAvailability}\n\nYou can now contact them directly!`);
+      } else {
+        alert(`👤 ${teammateName}\n\nSkills: ${teammateSkills}\nAvailability: ${teammateAvailability}\n\nNote: This user hasn't shared their email yet.`);
+      }
     }
   });
 </script>
