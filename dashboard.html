@@ -43,6 +43,12 @@
 <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
   <h1 class="text-3xl font-bold">Quick Teams</h1>
   <div class="flex gap-4 items-center">
+    <button id="addEventBtn" class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+      </svg>
+      Events
+    </button>
     <button id="createTeamBtnHeader" class="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition">Create Team</button>
     <button id="notificationsBtn" class="relative px-4 py-2 rounded-md border border-blue-500 text-blue-300 hover:bg-blue-700 transition">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -110,12 +116,11 @@
 
 <section class="mt-10">
   <h2 class="text-2xl font-bold mb-4">Upcoming Events & Clubs</h2>
-  <div class="flex gap-4 overflow-x-auto py-2">
-    <div class="glass p-4 min-w-[220px] rounded-xl flex flex-col justify-between"><div><h3 class="font-semibold text-white">AI Hackathon</h3><p class="text-sm text-slate-300 mt-1">Sep 20 • Web & AI Teams</p></div><button class="mt-2 w-full px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition text-sm">Join</button></div>
-    <div class="glass p-4 min-w-[220px] rounded-xl flex flex-col justify-between"><div><h3 class="font-semibold text-white">Game Dev Club</h3><p class="text-sm text-slate-300 mt-1">Weekly sessions • Unity & C#</p></div><button class="mt-2 w-full px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition text-sm">Join</button></div>
-    <div class="glass p-4 min-w-[220px] rounded-xl flex flex-col justify-between"><div><h3 class="font-semibold text-white">Design Challenge</h3><p class="text-sm text-slate-300 mt-1">Oct 5 • UI/UX Focus</p></div><button class="mt-2 w-full px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition text-sm">Join</button></div>
+  <div id="eventsContainer" class="flex gap-4 overflow-x-auto py-2">
+    <!-- Events will be dynamically loaded here -->
   </div>
 </section>
+
 
 <footer class="mt-16 text-center text-slate-400 text-sm">
   All the best! ❤️ • <span id="year"></span>
@@ -169,6 +174,37 @@
   </div>
 </div>
 
+<div id="addEventModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
+  <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4 modal-content-responsive">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-white">Add New Event</h2>
+      <button id="closeAddEventBtn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+    </div>
+    <form id="addEventForm">
+      <div class="mb-4">
+        <label for="eventName" class="block text-sm font-medium text-slate-300 mb-2">Event Name</label>
+        <input type="text" id="eventName" name="eventName" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-green-500" placeholder="e.g., AI Hackathon 2024" required>
+      </div>
+      <div class="mb-4">
+        <label for="eventDate" class="block text-sm font-medium text-slate-300 mb-2">Event Date</label>
+        <input type="date" id="eventDate" name="eventDate" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-green-500" required>
+      </div>
+      <div class="mb-4">
+        <label for="eventDomain" class="block text-sm font-medium text-slate-300 mb-2">Event Domain</label>
+        <input type="text" id="eventDomain" name="eventDomain" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-green-500" placeholder="e.g., Machine Learning, Web Development" required>
+      </div>
+      <div class="mb-6">
+        <label for="eventWebsite" class="block text-sm font-medium text-slate-300 mb-2">Website Link</label>
+        <input type="url" id="eventWebsite" name="eventWebsite" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:ring-2 focus:ring-green-500" placeholder="https://example.com" required>
+      </div>
+      <div class="flex justify-end gap-4">
+        <button type="button" id="cancelAddEventBtn" class="px-4 py-2 rounded-md border border-slate-500 text-slate-300 hover:bg-slate-700 transition">Cancel</button>
+        <button type="submit" class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition">Add Event</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -176,39 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultUser = { name: 'Guest User', avatar: 'https://placehold.co/50x50/a78bfa/fff?text=G', skills: [], availability: 'Weekends', goals: ['Build a portfolio piece', 'Learn new skills'] };
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || defaultUser;
 
-    const initialTeams = [{ id: 1, name: 'AI Hackathon Warriors', description: 'Building the future of AI.', skills: ['Python', 'TensorFlow'], members: 2, capacity: 4, status: 'Open', availability: 'Anytime', goals: ['Win a prize', 'Build a portfolio piece'] },{ id: 2, name: 'Web Dev Wizards', description: 'Crafting pixel-perfect web apps.', skills: ['React', 'Tailwind CSS'], members: 3, capacity: 4, status: 'Open', availability: 'Weekends', goals: ['Build a portfolio piece', 'Ship a product'] },{ id: 3, name: 'Game Changers', description: 'Creating the next big indie game.', skills: ['Unity', 'C#'], members: 4, capacity: 4, status: 'Full', availability: 'Evenings', goals: ['Have fun', 'Learn a new skill'] },{ id: 4, name: 'Data Dynamos', description: 'Finding insights in complex data.', skills: ['Python', 'SQL', 'JavaScript'], members: 1, capacity: 3, status: 'Open', availability: 'Weekends', goals: ['Win a prize', 'Learn a new skill'] }];
+    const initialTeams = [];
     
-    // Safely initialize teams array
-    let teams;
-    try {
-        const storedTeams = localStorage.getItem('teams');
-        teams = storedTeams ? JSON.parse(storedTeams) : initialTeams;
-        if (!Array.isArray(teams)) {
-            console.warn('Teams data is not an array, resetting to initial teams');
-            teams = initialTeams;
-            localStorage.setItem('teams', JSON.stringify(teams));
-        } else {
-            // Validate each team object
-            teams = teams.filter(team => {
-                return team && 
-                       typeof team === 'object' && 
-                       team.name && 
-                       team.description && 
-                       Array.isArray(team.skills);
-            });
-            
-            // If no valid teams remain, use initial teams
-            if (teams.length === 0) {
-                console.warn('No valid teams found, resetting to initial teams');
-                teams = initialTeams;
-                localStorage.setItem('teams', JSON.stringify(teams));
-            }
-        }
-    } catch (error) {
-        console.error('Error parsing teams from localStorage:', error);
-        teams = initialTeams;
-        localStorage.setItem('teams', JSON.stringify(teams));
-    }
+    // Initialize teams array - will be populated from Firebase
+    let teams = [];
     let appliedTeamIds = new Set(JSON.parse(localStorage.getItem('appliedTeamIds')) || []);
 
     // --- DOM SELECTORS ---
@@ -584,8 +591,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterAndRender = () => {
         // Ensure teams is a valid array
         if (!Array.isArray(teams)) {
-            console.warn('Teams is not an array in filterAndRender, resetting to initial teams');
-            teams = initialTeams;
+            console.warn('Teams is not an array in filterAndRender, setting to empty array');
+            teams = [];
         }
         
         currentUser.availability = availabilityFilter.value;
@@ -1132,8 +1139,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add to local teams array
             if (!Array.isArray(teams)) {
-                console.warn('Teams is not an array, resetting to initial teams');
-                teams = initialTeams;
+                console.warn('Teams is not an array, initializing empty array');
+                teams = [];
             }
             
             teams.push(newTeam);
@@ -1414,17 +1421,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Loaded team from Firebase:', teamData.name, 'ID:', doc.id);
                 });
                 
-                // Replace local teams with Firebase teams to ensure synchronization
-                if (!Array.isArray(teams)) {
-                    console.warn('Teams is not an array, resetting to initial teams');
-                    teams = initialTeams;
-                }
-                
-                // Keep local teams that don't have Firebase IDs (fallback for offline)
-                const localOnlyTeams = teams.filter(team => !team.firebaseId);
-                
-                // Combine Firebase teams with local-only teams
-                teams = [...firebaseTeams, ...localOnlyTeams];
+                // Replace local teams with Firebase teams only
+                teams = firebaseTeams;
                 
                 // Clean up duplicates in all teams
                 teams.forEach(team => {
@@ -1451,8 +1449,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Save updated teams to localStorage
                 localStorage.setItem('teams', JSON.stringify(teams));
-                console.log(`Successfully synchronized ${firebaseTeams.length} teams from Firebase`);
-                console.log(`Kept ${localOnlyTeams.length} local-only teams`);
+                console.log(`Successfully loaded ${firebaseTeams.length} teams from Firebase`);
             } else {
                 console.warn('Firebase functions not available for loading teams');
             }
@@ -1463,6 +1460,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 code: error.code,
                 stack: error.stack
             });
+            // Keep teams empty if Firebase fails - no fallback to dummy data
+            teams = [];
+            localStorage.setItem('teams', JSON.stringify(teams));
         }
     };
     
@@ -1551,20 +1551,163 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start the initialization
     initializeApp();
     
+    // Event management functionality
+    let events = JSON.parse(localStorage.getItem('events')) || [];
+    
+    // Function to remove duplicate events
+    const removeDuplicateEvents = (eventsArray) => {
+        const seen = new Set();
+        return eventsArray.filter(event => {
+            // Create a unique key based on event properties
+            const key = `${event.name}-${event.date}-${event.domain}-${event.website}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        });
+    };
+    
+    // Event modal handlers
+    document.getElementById('addEventBtn').addEventListener('click', () => {
+        document.getElementById('addEventModal').classList.remove('hidden');
+    });
+    
+    document.getElementById('closeAddEventBtn').addEventListener('click', () => {
+        document.getElementById('addEventModal').classList.add('hidden');
+    });
+    
+    document.getElementById('cancelAddEventBtn').addEventListener('click', () => {
+        document.getElementById('addEventModal').classList.add('hidden');
+    });
+    
+    // Event form submission
+    document.getElementById('addEventForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const eventName = document.getElementById('eventName').value.trim();
+        const eventDate = document.getElementById('eventDate').value;
+        const eventDomain = document.getElementById('eventDomain').value.trim();
+        const eventWebsite = document.getElementById('eventWebsite').value.trim();
+        
+        if (!eventName || !eventDate || !eventDomain || !eventWebsite) {
+            alert('Please fill in all fields');
+            return;
+        }
+        
+        // Create event object
+        const newEvent = {
+            id: Date.now().toString(),
+            name: eventName,
+            date: eventDate,
+            domain: eventDomain,
+            website: eventWebsite,
+            createdAt: new Date().toISOString()
+        };
+        
+        try {
+            // Add to Firebase if available
+            if (window.firebaseDb && window.firebaseAddDoc && window.firebaseCollection) {
+                const docRef = await window.firebaseAddDoc(window.firebaseCollection(window.firebaseDb, 'events'), newEvent);
+                // Update the event with Firebase ID
+                newEvent.id = docRef.id;
+            }
+            
+            // Add to local events array
+            events.push(newEvent);
+            localStorage.setItem('events', JSON.stringify(events));
+            
+            // Update UI
+            renderEvents();
+            
+            // Close modal and reset form
+            document.getElementById('addEventModal').classList.add('hidden');
+            document.getElementById('addEventForm').reset();
+            
+            alert('Event added successfully!');
+            
+        } catch (error) {
+            console.error('Error adding event:', error);
+            alert('Failed to add event. Please try again.');
+        }
+    });
+    
+    // Function to render events
+    const renderEvents = () => {
+        const eventsContainer = document.getElementById('eventsContainer');
+        
+        if (events.length === 0) {
+            eventsContainer.innerHTML = `
+                <div class="glass p-8 rounded-xl text-center w-full">
+                    <svg class="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-white mb-2">No Upcoming Events</h3>
+                    <p class="text-slate-400 mb-4">There are no upcoming events at the moment.</p>
+                    <button id="addFirstEventBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        Add First Event
+                    </button>
+                </div>
+            `;
+            
+            // Add event listener for the "Add First Event" button
+            document.getElementById('addFirstEventBtn').addEventListener('click', () => {
+                document.getElementById('addEventModal').classList.remove('hidden');
+            });
+        } else {
+            eventsContainer.innerHTML = events.map(event => `
+                <div class="glass p-4 min-w-[220px] rounded-xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-semibold text-white">${event.name}</h3>
+                        <p class="text-sm text-slate-300 mt-1">${new Date(event.date).toLocaleDateString()} • ${event.domain}</p>
+                    </div>
+                    <button onclick="window.open('${event.website}', '_blank')" class="mt-2 w-full px-3 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition text-sm">Visit Website</button>
+                </div>
+            `).join('');
+        }
+    };
+    
+    // Load events from Firebase on initialization
+    const loadEventsFromFirebase = async () => {
+        try {
+            if (window.firebaseDb && window.firebaseGetDocs && window.firebaseCollection) {
+                const eventsQuery = window.firebaseQuery(window.firebaseCollection(window.firebaseDb, 'events'));
+                const querySnapshot = await window.firebaseGetDocs(eventsQuery);
+                
+                const firebaseEvents = [];
+                querySnapshot.forEach((doc) => {
+                    const eventData = doc.data();
+                    eventData.id = doc.id;
+                    firebaseEvents.push(eventData);
+                });
+                
+                // Replace local events with Firebase events to avoid duplicates
+                // Use Firebase as the source of truth
+                if (firebaseEvents.length > 0) {
+                    events = removeDuplicateEvents(firebaseEvents);
+                    localStorage.setItem('events', JSON.stringify(events));
+                } else {
+                    // If no Firebase events, keep local events and remove duplicates
+                    events = removeDuplicateEvents(JSON.parse(localStorage.getItem('events')) || []);
+                    localStorage.setItem('events', JSON.stringify(events));
+                }
+            }
+        } catch (error) {
+            console.error('Error loading events from Firebase:', error);
+            // On error, use local events as fallback and remove duplicates
+            events = removeDuplicateEvents(JSON.parse(localStorage.getItem('events')) || []);
+            localStorage.setItem('events', JSON.stringify(events));
+        }
+    };
+    
+    // Initialize events
+    loadEventsFromFirebase().then(() => {
+        renderEvents();
+    });
     
 });
 </script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const communitySection = document.querySelector('.mt-10');
-        if (!communitySection) return;
-        let registeredEvents = JSON.parse(localStorage.getItem('registeredEvents')) || [];
-        const updateButtons = () => { communitySection.querySelectorAll('button').forEach((button, index) => { const eventId = `event-${index}`; if (registeredEvents.includes(eventId)) { button.textContent = 'Registered'; button.disabled = true; button.classList.add('bg-gray-700', 'cursor-not-allowed', 'hover:bg-gray-700'); } }); };
-        communitySection.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && !e.target.disabled) { const buttons = Array.from(communitySection.querySelectorAll('button')); const index = buttons.indexOf(e.target); const eventId = `event-${index}`; if (!registeredEvents.includes(eventId)) { registeredEvents.push(eventId); localStorage.setItem('registeredEvents', JSON.stringify(registeredEvents)); updateButtons(); } } });
-        updateButtons();
-    });
-</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
@@ -1691,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.removeItem('currentUser');
       localStorage.removeItem('teams');
       localStorage.removeItem('appliedTeamIds');
-      localStorage.removeItem('registeredEvents');
+      localStorage.removeItem('events');
       
       // Redirect to login page
       window.location.href = 'index.html';
