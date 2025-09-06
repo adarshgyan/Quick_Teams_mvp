@@ -931,13 +931,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div>
                                 <p class="text-white font-medium">Application Accepted! 🎉</p>
                                 <p class="text-slate-300 text-sm">You've been accepted to join "${notification.data.teamName}"</p>
+                                <p class="text-slate-400 text-xs mt-1">Welcome to the team! You can now collaborate with your teammates.</p>
                             </div>
                         </div>
                     `;
                     actionButtons = `
-                        <div class="mt-3 p-3 bg-blue-900/30 rounded-lg">
-                            <p class="text-sm text-blue-300 font-medium">📧 Contact Team Creator:</p>
+                        <div class="mt-3 p-3 bg-green-900/30 rounded-lg">
+                            <p class="text-sm text-green-300 font-medium">📧 Contact Team Creator:</p>
                             <p class="text-white text-sm">${notification.data.creatorEmail}</p>
+                            <p class="text-xs text-green-400 mt-1">Reach out to start collaborating!</p>
                         </div>
                     `;
                     break;
@@ -996,6 +998,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div>
                                 <p class="text-white font-medium">New Team Member Added! 🎉</p>
                                 <p class="text-slate-300 text-sm">${notification.data.memberName} has been added to your team "${notification.data.teamName}"</p>
+                                ${notification.data.memberSkills && notification.data.memberSkills.length > 0 ? `
+                                    <div class="mt-2">
+                                        <p class="text-xs text-slate-400 mb-1">Their Skills:</p>
+                                        <div class="flex gap-1 flex-wrap">
+                                            ${notification.data.memberSkills.map(skill => `<span class="px-2 py-1 bg-emerald-900/50 text-emerald-300 text-xs rounded">${skill}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
                     `;
@@ -1267,6 +1277,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const teamName = e.target.dataset.teamName;
             const teamId = e.target.dataset.teamId;
             
+            // Get notification data before deleting
+            const currentNotifications = await loadNotifications();
+            const currentNotification = currentNotifications.find(n => n.id === notificationId);
+            const applicantName = currentNotification?.data?.applicantName || 'Unknown';
+            const applicantSkills = currentNotification?.data?.applicantSkills || [];
+            
             // Delete the original application notification
             await deleteNotification(notificationId);
             
@@ -1281,13 +1297,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Check if applicant is already a member (prevent duplicates)
                 const isAlreadyMember = team.teamMembers.some(member => 
                     member.email?.toLowerCase() === applicantEmail?.toLowerCase() || 
-                    member.name?.toLowerCase() === notification.data.applicantName?.toLowerCase()
+                    member.name?.toLowerCase() === applicantName?.toLowerCase()
                 );
                 
                 if (!isAlreadyMember) {
                     // Add the new member to the team
                     const newMember = {
-                        name: notification.data.applicantName || 'Unknown',
+                        name: applicantName,
                         email: applicantEmail,
                         joinedAt: new Date().toISOString(),
                         isCreator: false
@@ -1320,10 +1336,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Send notification to team creator about new member being added
                 await sendNotification(window.firebaseAuth.currentUser.uid, 'member_added', {
-                    memberName: notification.data.applicantName || 'Unknown',
+                    memberName: applicantName,
                     teamName: teamName,
                     teamId: teamId,
-                    memberEmail: applicantEmail
+                    memberEmail: applicantEmail,
+                    memberSkills: applicantSkills
                 });
             }
             
@@ -1341,9 +1358,9 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`✅ Application accepted! Team now has ${team.members}/${team.capacity} members.\n\nYou can contact the applicant at: ${applicantEmail}`);
             
             // Refresh notifications
-            const notifications = await loadNotifications();
-            renderNotifications(notifications);
-            updateNotificationBadge(notifications);
+            const updatedNotifications = await loadNotifications();
+            renderNotifications(updatedNotifications);
+            updateNotificationBadge(updatedNotifications);
         }
         
         if (e.target.classList.contains('reject-application-btn')) {
