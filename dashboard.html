@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultUser = { name: 'Guest User', avatar: 'https://placehold.co/50x50/a78bfa/fff?text=G', skills: [], availability: 'Weekends', goals: ['Build a portfolio piece', 'Learn new skills'] };
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || defaultUser;
 
-    const initialTeams = [{ id: 1, name: 'AI Hackathon Warriors', description: 'Building the future of AI.', skills: ['Python', 'TensorFlow'], members: 2, capacity: 4, status: 'Open', availability: 'Anytime', goals: ['Win a prize', 'Build a portfolio piece'] },{ id: 2, name: 'Web Dev Wizards', description: 'Crafting pixel-perfect web apps.', skills: ['React', 'Tailwind CSS'], members: 3, capacity: 4, status: 'Open', availability: 'Weekends', goals: ['Build a portfolio piece', 'Ship a product'] },{ id: 3, name: 'Game Changers', description: 'Creating the next big indie game.', skills: ['Unity', 'C#'], members: 4, capacity: 4, status: 'Full', availability: 'Evenings', goals: ['Have fun', 'Learn a new skill'] },{ id: 4, name: 'Data Dynamos', description: 'Finding insights in complex data.', skills: ['Python', 'SQL', 'JavaScript'], members: 1, capacity: 3, status: 'Open', availability: 'Weekends', goals: ['Win a prize', 'Learn a new skill'] }];
+    const initialTeams = [];
     
     // Safely initialize teams array
     let teams;
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const storedTeams = localStorage.getItem('teams');
         teams = storedTeams ? JSON.parse(storedTeams) : initialTeams;
         if (!Array.isArray(teams)) {
-            console.warn('Teams data is not an array, resetting to initial teams');
+            console.warn('Teams data is not an array, resetting to empty array');
             teams = initialTeams;
             localStorage.setItem('teams', JSON.stringify(teams));
         } else {
@@ -159,12 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
                        Array.isArray(team.skills);
             });
             
-            // If no valid teams remain, use initial teams
-            if (teams.length === 0) {
-                console.warn('No valid teams found, resetting to initial teams');
-                teams = initialTeams;
-                localStorage.setItem('teams', JSON.stringify(teams));
-            }
+            // Save validated teams back to localStorage
+            localStorage.setItem('teams', JSON.stringify(teams));
         }
     } catch (error) {
         console.error('Error parsing teams from localStorage:', error);
@@ -204,7 +200,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderTeams = (sortedTeams) => {
         teamGrid.innerHTML = '';
-        if (sortedTeams.length === 0) { teamGrid.innerHTML = `<p class="text-slate-400 col-span-full text-center">No teams found.</p>`; return; }
+        if (sortedTeams.length === 0) { 
+            teamGrid.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="glass p-8 rounded-lg max-w-md mx-auto">
+                        <div class="text-6xl mb-4">🚀</div>
+                        <h3 class="text-xl font-semibold text-white mb-2">No teams available yet</h3>
+                        <p class="text-slate-400 mb-4">Be the first to create a team and start collaborating!</p>
+                        <button onclick="document.getElementById('createTeamModal').classList.remove('hidden')" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition">
+                            Create Your Team
+                        </button>
+                    </div>
+                </div>
+            `; 
+            return; 
+        }
         sortedTeams.forEach(({ team, score }) => {
             const isApplied = appliedTeamIds.has(team.firebaseId || team.id);
             
@@ -249,7 +260,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ) : [];
             
             const competitionInfo = team.competitionName ? `<p class="text-sm text-slate-400 font-medium mt-2">Competition: <span class="font-normal text-slate-300">${team.competitionName}</span></p>` : '';
-            const teamSizeInfo = `<p class="text-sm text-slate-400 font-medium mt-2">Team Size: <span class="font-normal text-slate-300">${team.members}/${team.capacity || team.teamSize || 4}</span></p>`;
+            // Calculate accurate member count including creator
+            let actualMemberCount = 1; // At minimum, creator is always a member
+            
+            if (team.teamMembers && team.teamMembers.length > 0) {
+                actualMemberCount = team.teamMembers.length;
+            } else if (team.members && team.members > 0) {
+                actualMemberCount = team.members;
+            }
+            
+            const teamCapacity = team.capacity || team.teamSize || 4;
+            const teamSizeInfo = `<p class="text-sm text-slate-400 font-medium mt-2">Team Size: <span class="font-normal text-slate-300">${actualMemberCount}/${teamCapacity}</span></p>`;
             
             const skillsSection = matchingSkills.length > 0 || nonMatchingSkills.length > 0 
                 ? `<div class="mt-3">
@@ -263,24 +284,74 @@ document.addEventListener('DOMContentLoaded', () => {
                     ` : ''}
                 </div>` : '';
             
-            // Team members section
-            const teamMembersSection = team.teamMembers && team.teamMembers.length > 0 
-                ? `<div class="mt-3">
-                    <p class="text-sm text-slate-400 font-medium mb-2">Team Members:</p>
-                    <div class="space-y-1">
-                        ${team.teamMembers.map(member => `
+            // Team members section - ensure creator is always included
+            let teamMembers = team.teamMembers || [];
+            
+            // If no teamMembers array or it's empty, create one with the creator
+            if (!team.teamMembers || team.teamMembers.length === 0) {
+                teamMembers = [{
+                    name: team.createdBy || 'Team Creator',
+                    email: team.creatorEmail || 'unknown',
+                    joinedAt: team.createdAt || new Date().toISOString(),
+                    role: 'creator',
+                    isCreator: true
+                }];
+            }
+            
+            // Ensure creator is always in the teamMembers array
+            const hasCreator = teamMembers.some(member => 
+                member.email === team.creatorEmail || 
+                member.isCreator || 
+                member.role === 'creator'
+            );
+            
+            if (!hasCreator) {
+                teamMembers.unshift({
+                    name: team.createdBy || 'Team Creator',
+                    email: team.creatorEmail || 'unknown',
+                    joinedAt: team.createdAt || new Date().toISOString(),
+                    role: 'creator',
+                    isCreator: true
+                });
+            }
+            
+            // Remove duplicates and sort (creator first)
+            const uniqueMembers = teamMembers.filter((member, index, self) => 
+                index === self.findIndex(m => m.email === member.email)
+            ).sort((a, b) => {
+                // Creator first, then by join date
+                if (a.isCreator || a.role === 'creator') return -1;
+                if (b.isCreator || b.role === 'creator') return 1;
+                return new Date(a.joinedAt) - new Date(b.joinedAt);
+            });
+            
+            const teamMembersSection = `<div class="mt-3">
+                <p class="text-sm text-slate-400 font-medium mb-2">Team Members (${uniqueMembers.length}/${team.capacity}):</p>
+                <div class="space-y-1 max-h-32 overflow-y-auto">
+                    ${uniqueMembers.map(member => {
+                        const isCreator = member.isCreator || member.role === 'creator';
+                        const avatarColor = isCreator ? 'bg-purple-500' : 'bg-blue-500';
+                        const roleBadge = isCreator ? 
+                            '<span class="px-1.5 py-0.5 bg-purple-600 text-white text-xs rounded-full">Creator</span>' : 
+                            '<span class="px-1.5 py-0.5 bg-slate-600 text-slate-300 text-xs rounded-full">Member</span>';
+                        
+                        return `
                             <div class="flex items-center justify-between p-2 bg-slate-700/30 rounded-lg">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <div class="w-6 h-6 ${avatarColor} rounded-full flex items-center justify-center">
                                         <span class="text-xs text-white font-medium">${member.name.charAt(0).toUpperCase()}</span>
                                     </div>
-                                    <span class="text-white text-sm">${member.name}</span>
+                                    <div class="flex flex-col">
+                                        <span class="text-white text-sm font-medium">${member.name}</span>
+                                        ${roleBadge}
+                                    </div>
                                 </div>
                                 <span class="text-slate-400 text-xs">${member.email}</span>
                             </div>
-                        `).join('')}
-                    </div>
-                </div>` : '';
+                        `;
+                    }).join('')}
+                </div>
+            </div>`;
 
             const teamCardHTML = `<div class="glass p-4 team-card ${isApplied ? 'opacity-70' : ''}" data-team-id="${team.firebaseId || team.id}">
                 <div>
@@ -559,10 +630,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadNotifications = async () => {
         try {
             if (!window.firebaseAuth?.currentUser || !window.firebaseDb || !window.firebaseGetDocs || !window.firebaseCollection) {
+                console.warn('Firebase not ready for loading notifications');
                 return [];
             }
 
             const userId = window.firebaseAuth.currentUser.uid;
+            console.log('Loading notifications for user:', userId);
+            
             const notificationsQuery = window.firebaseQuery(
                 window.firebaseCollection(window.firebaseDb, 'notifications'),
                 window.firebaseOrderBy('createdAt', 'desc')
@@ -576,11 +650,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (notification.recipientId === userId) {
                     notifications.push({
                         id: doc.id,
-                        ...notification
+                        ...notification,
+                        createdAt: new Date(notification.createdAt)
                     });
                 }
             });
 
+            console.log(`Loaded ${notifications.length} notifications for user ${userId}`);
             return notifications;
         } catch (error) {
             console.error('Error loading notifications:', error);
@@ -603,6 +679,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const deleteNotification = async (notificationId) => {
+        try {
+            if (!window.firebaseDb || !window.firebaseDeleteDoc || !window.firebaseDoc) {
+                return false;
+            }
+
+            const notificationRef = window.firebaseDoc(window.firebaseDb, 'notifications', notificationId);
+            await window.firebaseDeleteDoc(notificationRef);
+            return true;
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            return false;
+        }
+    };
+
     const renderNotifications = (notifications) => {
         const notificationsList = document.getElementById('notificationsList');
         if (!notificationsList) return;
@@ -614,7 +705,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         notificationsList.innerHTML = notifications.map(notification => {
             const isRead = notification.isRead;
-            const timeAgo = new Date(notification.createdAt).toLocaleString();
+            const timeAgo = getTimeAgo(notification.createdAt);
             
             let content = '';
             let actionButtons = '';
@@ -644,13 +735,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     actionButtons = `
                         <div class="flex gap-2 mt-3">
-                            <button class="accept-application-btn px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors flex items-center gap-1" data-notification-id="${notification.id}" data-applicant-email="${notification.data.applicantEmail}" data-team-name="${notification.data.teamName}" data-team-id="${notification.data.teamId}">
+                            <button class="accept-application-btn px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                    data-notification-id="${notification.id}" 
+                                    data-applicant-email="${notification.data.applicantEmail || ''}" 
+                                    data-applicant-name="${notification.data.applicantName || ''}"
+                                    data-team-name="${notification.data.teamName || ''}" 
+                                    data-team-id="${notification.data.teamId || ''}">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                 </svg>
                                 Accept
                             </button>
-                            <button class="reject-application-btn px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center gap-1" data-notification-id="${notification.id}" data-applicant-email="${notification.data.applicantEmail}" data-team-name="${notification.data.teamName}">
+                            <button class="reject-application-btn px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                    data-notification-id="${notification.id}" 
+                                    data-applicant-email="${notification.data.applicantEmail || ''}" 
+                                    data-applicant-name="${notification.data.applicantName || ''}"
+                                    data-team-name="${notification.data.teamName || ''}">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                 </svg>
@@ -668,14 +768,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-white font-medium">Application Accepted! 🎉</p>
+                                <p class="text-white font-medium">Application Accepted!</p>
                                 <p class="text-slate-300 text-sm">You've been accepted to join "${notification.data.teamName}"</p>
                             </div>
                         </div>
                     `;
                     actionButtons = `
                         <div class="mt-3 p-3 bg-blue-900/30 rounded-lg">
-                            <p class="text-sm text-blue-300 font-medium">📧 Contact Team Creator:</p>
+                            <p class="text-sm text-blue-300 font-medium">Contact Team Creator:</p>
                             <p class="text-white text-sm">${notification.data.creatorEmail}</p>
                         </div>
                     `;
@@ -725,6 +825,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             badge.classList.add('hidden');
         }
+    };
+
+    const getTimeAgo = (date) => {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        return date.toLocaleDateString();
     };
 
     const findUserByEmail = async (email) => {
@@ -807,7 +918,13 @@ document.addEventListener('DOMContentLoaded', () => {
             availability: currentUser.availability || 'Weekends',
             goals: currentUser.goals || ['Build a portfolio piece'],
             createdBy: currentUser.name || 'Anonymous',
-            teamMembers: [], // Initialize empty team members array
+            teamMembers: [{
+                name: currentUser.name || 'Anonymous',
+                email: window.firebaseAuth?.currentUser?.email || 'unknown',
+                joinedAt: new Date().toISOString(),
+                role: 'creator',
+                isCreator: true
+            }], // Initialize with creator as first member
             createdAt: new Date().toISOString(),
             creatorId: window.firebaseAuth?.currentUser?.uid || 'anonymous',
             creatorEmail: window.firebaseAuth?.currentUser?.email || 'unknown',
@@ -919,10 +1036,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const notificationsModal = document.getElementById('notificationsModal');
         notificationsModal.classList.remove('hidden');
         
-        // Load and display notifications
-        const notifications = await loadNotifications();
-        renderNotifications(notifications);
-        updateNotificationBadge(notifications);
+        // Show loading state
+        const notificationsList = document.getElementById('notificationsList');
+        notificationsList.innerHTML = '<p class="text-slate-400 text-center py-8">Loading notifications...</p>';
+        
+        try {
+            // Load and display notifications
+            const notifications = await loadNotifications();
+            renderNotifications(notifications);
+            updateNotificationBadge(notifications);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            notificationsList.innerHTML = '<p class="text-red-400 text-center py-8">Error loading notifications. Please try again.</p>';
+        }
     });
     
     document.getElementById('closeNotificationsBtn').addEventListener('click', () => {
@@ -946,31 +1072,70 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle notification actions
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('accept-application-btn')) {
-            const notificationId = e.target.dataset.notificationId;
-            const applicantEmail = e.target.dataset.applicantEmail;
-            const teamName = e.target.dataset.teamName;
-            const teamId = e.target.dataset.teamId;
-            
-            // Mark notification as read
-            await markNotificationAsRead(notificationId);
-            
-            // Update team member count and add member info
-            const team = teams.find(t => (t.firebaseId || t.id) === teamId);
-            if (team) {
-                team.members = (team.members || 1) + 1;
+            try {
+                // Prevent double-clicks
+                if (e.target.disabled) return;
+                e.target.disabled = true;
+                e.target.textContent = 'Processing...';
                 
-                // Initialize teamMembers array if it doesn't exist
-                if (!team.teamMembers) {
-                    team.teamMembers = [];
+                // Disable the reject button too to prevent conflicts
+                const rejectBtn = e.target.parentElement.querySelector('.reject-application-btn');
+                if (rejectBtn) rejectBtn.disabled = true;
+                
+                const notificationId = e.target.dataset.notificationId;
+                const applicantEmail = e.target.dataset.applicantEmail;
+                const teamName = e.target.dataset.teamName;
+                const teamId = e.target.dataset.teamId;
+                
+                console.log('Accepting application:', { notificationId, applicantEmail, teamName, teamId });
+                
+                // Find the team
+                const team = teams.find(t => (t.firebaseId || t.id) === teamId);
+                if (!team) {
+                    alert('Team not found! Please refresh the page and try again.');
+                    return;
+                }
+                
+                // Check if team is already full
+                if (team.status === 'Full' || (team.members >= team.capacity)) {
+                    alert('This team is already full! Cannot accept more members.');
+                    return;
+                }
+                
+                // Get applicant name from notification data
+                const notifications = await loadNotifications();
+                const currentNotification = notifications.find(n => n.id === notificationId);
+                const applicantName = currentNotification?.data?.applicantName || 'Unknown User';
+                
+                // Initialize teamMembers array if it doesn't exist (should include creator)
+                if (!team.teamMembers || team.teamMembers.length === 0) {
+                    team.teamMembers = [{
+                        name: team.createdBy || 'Team Creator',
+                        email: team.creatorEmail || 'unknown',
+                        joinedAt: team.createdAt || new Date().toISOString(),
+                        role: 'creator',
+                        isCreator: true
+                    }];
+                }
+                
+                // Check if applicant is already a team member
+                if (team.teamMembers.some(member => member.email === applicantEmail)) {
+                    alert('This person is already a member of your team!');
+                    return;
                 }
                 
                 // Add the new member to the team
                 const newMember = {
-                    name: notification.data.applicantName || 'Unknown',
+                    name: applicantName,
                     email: applicantEmail,
-                    joinedAt: new Date().toISOString()
+                    joinedAt: new Date().toISOString(),
+                    role: 'member',
+                    isCreator: false
                 };
                 team.teamMembers.push(newMember);
+                
+                // Update team member count based on actual teamMembers array length
+                team.members = team.teamMembers.length;
                 
                 // Update team status if full
                 if (team.members >= team.capacity) {
@@ -986,58 +1151,135 @@ document.addEventListener('DOMContentLoaded', () => {
                         teamMembers: team.teamMembers,
                         lastUpdated: new Date().toISOString()
                     });
+                    console.log('Team updated in Firebase successfully');
                 }
                 
                 // Update local storage
                 localStorage.setItem('teams', JSON.stringify(teams));
                 
+                // Send acceptance notification to applicant
+                const applicant = await findUserByEmail(applicantEmail);
+                if (applicant) {
+                    await sendNotification(applicant.uid, 'application_accepted', {
+                        teamName: teamName,
+                        creatorEmail: window.firebaseAuth.currentUser.email,
+                        teamId: teamId,
+                        creatorName: window.firebaseAuth.currentUser.displayName || 'Team Leader'
+                    });
+                    console.log('Acceptance notification sent to applicant');
+                }
+                
+                // Delete the processed notification
+                await deleteNotification(notificationId);
+                console.log('Application notification deleted after processing');
+                
+                // Show success popup with detailed information
+                const successMessage = `Application Accepted Successfully!
+
+${applicantName} has been added to your team "${teamName}"
+
+Contact Information:
+   Email: ${applicantEmail}
+
+Team Status:
+   Current Members: ${team.members}/${team.capacity}
+   Status: ${team.status}
+
+The applicant has been notified of their acceptance and provided with your contact email.`;
+                
+                alert(successMessage);
+                
                 // Refresh team display
                 filterAndRender();
+                
+                // Refresh notifications
+                const updatedNotifications = await loadNotifications();
+                renderNotifications(updatedNotifications);
+                updateNotificationBadge(updatedNotifications);
+                
+            } catch (error) {
+                console.error('Error accepting application:', error);
+                alert('Error accepting application. Please try again.');
+            } finally {
+                // Re-enable button
+                e.target.disabled = false;
+                e.target.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    Accept
+                `;
             }
-            
-            // Send acceptance notification to applicant
-            const applicant = await findUserByEmail(applicantEmail);
-            if (applicant) {
-                await sendNotification(applicant.uid, 'application_accepted', {
-                    teamName: teamName,
-                    creatorEmail: window.firebaseAuth.currentUser.email,
-                    teamId: teamId
-                });
-            }
-            
-            // Show success message with email exchange
-            alert(`✅ Application accepted! Team now has ${team.members}/${team.capacity} members.\n\nYou can contact the applicant at: ${applicantEmail}`);
-            
-            // Refresh notifications
-            const notifications = await loadNotifications();
-            renderNotifications(notifications);
-            updateNotificationBadge(notifications);
         }
         
         if (e.target.classList.contains('reject-application-btn')) {
-            const notificationId = e.target.dataset.notificationId;
-            const applicantEmail = e.target.dataset.applicantEmail;
-            const teamName = e.target.dataset.teamName;
-            
-            // Mark notification as read
-            await markNotificationAsRead(notificationId);
-            
-            // Send rejection notification to applicant
-            const applicant = await findUserByEmail(applicantEmail);
-            if (applicant) {
-                await sendNotification(applicant.uid, 'application_rejected', {
-                    teamName: teamName,
-                    creatorEmail: window.firebaseAuth.currentUser.email
-                });
+            try {
+                // Prevent double-clicks
+                if (e.target.disabled) return;
+                e.target.disabled = true;
+                e.target.textContent = 'Processing...';
+                
+                // Disable the accept button too to prevent conflicts
+                const acceptBtn = e.target.parentElement.querySelector('.accept-application-btn');
+                if (acceptBtn) acceptBtn.disabled = true;
+                
+                const notificationId = e.target.dataset.notificationId;
+                const applicantEmail = e.target.dataset.applicantEmail;
+                const teamName = e.target.dataset.teamName;
+                
+                console.log('Rejecting application:', { notificationId, applicantEmail, teamName });
+                
+                // Get applicant name from notification data
+                const notifications = await loadNotifications();
+                const currentNotification = notifications.find(n => n.id === notificationId);
+                const applicantName = currentNotification?.data?.applicantName || 'Unknown User';
+                
+                // Send rejection notification to applicant
+                const applicant = await findUserByEmail(applicantEmail);
+                if (applicant) {
+                    await sendNotification(applicant.uid, 'application_rejected', {
+                        teamName: teamName,
+                        creatorEmail: window.firebaseAuth.currentUser.email,
+                        creatorName: window.firebaseAuth.currentUser.displayName || 'Team Leader'
+                    });
+                    console.log('Rejection notification sent to applicant');
+                }
+                
+                // Delete the processed notification
+                await deleteNotification(notificationId);
+                console.log('Application notification deleted after processing');
+                
+                // Show rejection popup with detailed information
+                const rejectionMessage = `Application Rejected
+
+Applicant: ${applicantName}
+Email: ${applicantEmail}
+Team: "${teamName}"
+
+The applicant has been notified of the rejection and provided with your contact email for future opportunities.
+
+Tip: You can always reach out to them later if you have other projects that might be a better fit.`;
+                
+                alert(rejectionMessage);
+                
+                // Refresh notifications
+                const updatedNotifications = await loadNotifications();
+                renderNotifications(updatedNotifications);
+                updateNotificationBadge(updatedNotifications);
+                
+            } catch (error) {
+                console.error('Error rejecting application:', error);
+                alert('Error rejecting application. Please try again.');
+            } finally {
+                // Re-enable button
+                e.target.disabled = false;
+                e.target.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                    Reject
+                `;
             }
-            
-            // Show rejection message
-            alert(`❌ Application rejected for team "${teamName}". The applicant has been notified.`);
-            
-            // Refresh notifications
-            const notifications = await loadNotifications();
-            renderNotifications(notifications);
-            updateNotificationBadge(notifications);
         }
     });
 
@@ -1058,24 +1300,40 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('This team is already full!');
                         return;
                     }
+                    
+                    // Check if user already applied
+                    if (appliedTeamIds.has(teamId)) {
+                        alert('You have already applied to this team!');
+                        return;
+                    }
+                    
                     // Send notification to team creator
                     const notificationData = {
                         applicantName: currentUser.name,
                         applicantEmail: window.firebaseAuth.currentUser.email,
                         teamName: team.name,
                         teamId: teamId,
-                        applicantSkills: currentUser.skills || []
+                        applicantSkills: currentUser.skills || [],
+                        appliedAt: new Date().toISOString()
                     };
                     
+                    console.log('Sending team application notification:', notificationData);
+                    
                     // Send notification to team creator
-                    await sendNotification(team.creatorId, 'team_application', notificationData);
+                    const notificationSent = await sendNotification(team.creatorId, 'team_application', notificationData);
                     
-                    // Add to applied teams
-                    appliedTeamIds.add(teamId);
-                    localStorage.setItem('appliedTeamIds', JSON.stringify(Array.from(appliedTeamIds)));
-                    filterAndRender();
-                    
-                    alert('Application sent! The team creator will be notified.');
+                    if (notificationSent) {
+                        // Add to applied teams
+                        appliedTeamIds.add(teamId);
+                        localStorage.setItem('appliedTeamIds', JSON.stringify(Array.from(appliedTeamIds)));
+                        filterAndRender();
+                        
+                        alert(`Application sent successfully!\n\nYour application to join "${team.name}" has been sent to the team creator.\n\nYou will be notified when they respond to your application.`);
+                    } else {
+                        alert('Failed to send application. Please try again.');
+                    }
+                } else {
+                    alert('Unable to apply. Please make sure you are logged in and the team exists.');
                 }
             } 
         } 
@@ -1105,20 +1363,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Replace local teams with Firebase teams to ensure synchronization
                 if (!Array.isArray(teams)) {
-                    console.warn('Teams is not an array, resetting to initial teams');
-                    teams = initialTeams;
+                    console.warn('Teams is not an array, resetting to empty array');
+                    teams = [];
                 }
                 
-                // Keep local teams that don't have Firebase IDs (fallback for offline)
-                const localOnlyTeams = teams.filter(team => !team.firebaseId);
+                // Only keep Firebase teams - remove all local teams without Firebase IDs
+                // This ensures only real Firebase teams are shown
+                teams = firebaseTeams;
                 
-                // Combine Firebase teams with local-only teams
-                teams = [...firebaseTeams, ...localOnlyTeams];
+                // Clean up and fix team member structure
+                teams = ensureTeamCreatorIncluded(teams);
+                
+                // Final cleanup to remove any dummy teams that might have slipped through
+                cleanupDummyTeams();
                 
                 // Save updated teams to localStorage
                 localStorage.setItem('teams', JSON.stringify(teams));
                 console.log(`Successfully synchronized ${firebaseTeams.length} teams from Firebase`);
-                console.log(`Kept ${localOnlyTeams.length} local-only teams`);
+                console.log('Only Firebase teams are now displayed');
             } else {
                 console.warn('Firebase functions not available for loading teams');
             }
@@ -1132,11 +1394,126 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // --- TEAM MEMBER INITIALIZATION ---
+    const ensureTeamCreatorIncluded = (teams) => {
+        teams.forEach(team => {
+            // Ensure team has creator information
+            if (!team.createdBy && team.creatorEmail) {
+                team.createdBy = 'Team Creator';
+            }
+            if (!team.creatorEmail && team.createdBy) {
+                team.creatorEmail = 'unknown@example.com';
+            }
+            if (!team.creatorId) {
+                team.creatorId = 'unknown-creator';
+            }
+            
+            // Ensure team has proper member structure
+            if (!team.teamMembers || !Array.isArray(team.teamMembers)) {
+                team.teamMembers = [{
+                    name: team.createdBy || 'Team Creator',
+                    email: team.creatorEmail || 'unknown@example.com',
+                    joinedAt: team.createdAt || new Date().toISOString(),
+                    role: 'creator',
+                    isCreator: true
+                }];
+            }
+            
+            // Ensure creator is always in teamMembers array
+            const hasCreator = team.teamMembers.some(member => 
+                member.email === team.creatorEmail || 
+                member.isCreator || 
+                member.role === 'creator'
+            );
+            
+            if (!hasCreator) {
+                team.teamMembers.unshift({
+                    name: team.createdBy || 'Team Creator',
+                    email: team.creatorEmail || 'unknown@example.com',
+                    joinedAt: team.createdAt || new Date().toISOString(),
+                    role: 'creator',
+                    isCreator: true
+                });
+            }
+            
+            // Remove duplicates
+            team.teamMembers = team.teamMembers.filter((member, index, self) => 
+                index === self.findIndex(m => m.email === member.email)
+            );
+            
+            // Ensure creator is marked properly
+            const creatorMember = team.teamMembers.find(m => m.email === team.creatorEmail);
+            if (creatorMember) {
+                creatorMember.role = 'creator';
+                creatorMember.isCreator = true;
+                creatorMember.name = team.createdBy || 'Team Creator';
+            }
+            
+            // Update member count to match actual teamMembers length
+            team.members = team.teamMembers.length;
+        });
+        
+        return teams;
+    };
+
+    // --- CLEANUP DUMMY DATA ---
+    const cleanupDummyTeams = () => {
+        const dummyTeamNames = [
+            'AI Hackathon Warriors',
+            'Web Dev Wizards', 
+            'Game Changers',
+            'Data Dynamos'
+        ];
+        
+        // Remove dummy teams from localStorage
+        const storedTeams = localStorage.getItem('teams');
+        if (storedTeams) {
+            try {
+                const parsedTeams = JSON.parse(storedTeams);
+                if (Array.isArray(parsedTeams)) {
+                    const filteredTeams = parsedTeams.filter(team => 
+                        !dummyTeamNames.includes(team.name)
+                    );
+                    localStorage.setItem('teams', JSON.stringify(filteredTeams));
+                    console.log('Cleaned up dummy teams from localStorage');
+                }
+            } catch (error) {
+                console.error('Error cleaning up dummy teams:', error);
+                // If there's an error parsing, clear the teams completely
+                localStorage.setItem('teams', JSON.stringify([]));
+                console.log('Cleared teams localStorage due to parsing error');
+            }
+        }
+        
+        // Also clean up the current teams array
+        if (Array.isArray(teams)) {
+            teams = teams.filter(team => 
+                !dummyTeamNames.includes(team.name)
+            );
+            console.log('Cleaned up dummy teams from current teams array');
+        }
+    };
+
+    // --- FORCE CLEAN SLATE ---
+    const forceCleanSlate = () => {
+        // Clear all teams from localStorage
+        localStorage.setItem('teams', JSON.stringify([]));
+        // Reset teams array to empty
+        teams = [];
+        console.log('Forced clean slate - all teams cleared');
+    };
+
     // --- INITIALIZATION ---
     document.getElementById('year').textContent = new Date().getFullYear();
     
     // Initialize app - load profile and teams
     const initializeApp = async () => {
+        // Force clean slate to ensure only Firebase teams are shown
+        forceCleanSlate();
+        
+        // Clean up any existing dummy teams first
+        cleanupDummyTeams();
+        
         // Wait for Firebase to be ready
         await new Promise(resolve => setTimeout(resolve, 2000));
         
@@ -1164,6 +1541,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Load teams from Firebase and render
         await loadTeamsFromFirebase();
+        
+        // Ensure all teams have proper creator information
+        teams = ensureTeamCreatorIncluded(teams);
+        
+        // Final cleanup to remove any dummy teams
+        cleanupDummyTeams();
+        
+        localStorage.setItem('teams', JSON.stringify(teams));
+        
         filterAndRender();
         
         // Load notifications and update badge
@@ -1202,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
   import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
   const firebaseConfig = { apiKey: "AIzaSyAhmkrHFQhSz1mzUZFBNQRUuZvnPcgF4lU", authDomain: "quick-teams-29685.firebaseapp.com", projectId: "quick-teams-29685", storageBucket: "quick-teams-29685.firebasestorage.app", messagingSenderId: "814121228704", appId: "1:814121228704:web:eb0bf19efef1e7ded56cc5", measurementId: "G-Y1EY57N7BC" };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -1221,6 +1607,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.firebaseSetDoc = setDoc;
   window.firebaseGetDoc = getDoc;
   window.firebaseUpdateDoc = updateDoc;
+  window.firebaseDeleteDoc = deleteDoc;
   
   // Handle authentication state changes
   onAuthStateChanged(auth, async (user) => {
