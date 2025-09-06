@@ -1016,6 +1016,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                     break;
+                case 'application_rejected_by_leader':
+                    content = `
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-white font-medium">Application Rejected</p>
+                                <p class="text-slate-300 text-sm">You rejected ${notification.data.applicantName}'s application to join "${notification.data.teamName}"</p>
+                                <p class="text-slate-400 text-xs mt-1">The applicant has been notified of your decision.</p>
+                            </div>
+                        </div>
+                    `;
+                    actionButtons = `
+                        <div class="mt-3 p-3 bg-orange-900/30 rounded-lg">
+                            <p class="text-sm text-orange-300 font-medium">📧 Applicant Contact:</p>
+                            <p class="text-white text-sm">${notification.data.applicantEmail}</p>
+                        </div>
+                    `;
+                    break;
                 default:
                     content = `<p class="text-white">${notification.data.message || 'New notification'}</p>`;
             }
@@ -1368,8 +1390,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const applicantEmail = e.target.dataset.applicantEmail;
             const teamName = e.target.dataset.teamName;
             
-            // Mark notification as read
-            await markNotificationAsRead(notificationId);
+            // Get notification data before deleting
+            const currentNotifications = await loadNotifications();
+            const currentNotification = currentNotifications.find(n => n.id === notificationId);
+            const applicantName = currentNotification?.data?.applicantName || 'Unknown';
+            
+            // Delete the original application notification
+            await deleteNotification(notificationId);
             
             // Send rejection notification to applicant
             const applicant = await findUserByEmail(applicantEmail);
@@ -1380,13 +1407,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             
+            // Send notification to team leader about rejection
+            await sendNotification(window.firebaseAuth.currentUser.uid, 'application_rejected_by_leader', {
+                applicantName: applicantName,
+                teamName: teamName,
+                applicantEmail: applicantEmail
+            });
+            
             // Show rejection message
             alert(`❌ Application rejected for team "${teamName}". The applicant has been notified.`);
             
             // Refresh notifications
-            const notifications = await loadNotifications();
-            renderNotifications(notifications);
-            updateNotificationBadge(notifications);
+            const updatedNotifications = await loadNotifications();
+            renderNotifications(updatedNotifications);
+            updateNotificationBadge(updatedNotifications);
         }
     });
 
